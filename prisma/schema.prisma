@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum ConversationType {
+  CHAT
+  VOICE
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CUSTOMER
+  ARCHIVED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+}
+
+enum SmsDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SmsStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model Business {
+  id               String         @id @default(cuid())
+  name             String
+  industry         String?
+  websiteUrl       String?
+  phoneNumber      String?
+  country          String?        @default("UK")
+
+  users            User[]
+  subscriptions    Subscription[]
+  leads            Lead[]
+  conversations    Conversation[]
+  messages         Message[]
+  appointments     Appointment[]
+  smsLogs          SmsLog[]
+  aiSettings       AiSettings?
+
+  stripeCustomerId    String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id])
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  businessId           String
+  business             Business           @relation(fields: [businessId], references: [id])
+  status               SubscriptionStatus
+  planCode             String
+  trialEndsAt          DateTime?
+  currentPeriodEnd     DateTime?
+  stripeSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([businessId])
+}
+
+model Lead {
+  id            String         @id @default(cuid())
+  businessId    String
+  business      Business       @relation(fields: [businessId], references: [id])
+  fullName      String?
+  email         String?
+  phone         String?
+  source        String?
+  status        LeadStatus     @default(NEW)
+  notes         String?
+  conversations Conversation[]
+  appointments  Appointment[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([businessId])
+}
+
+model Conversation {
+  id            String           @id @default(cuid())
+  businessId    String
+  business      Business         @relation(fields: [businessId], references: [id])
+  leadId        String?
+  lead          Lead?            @relation(fields: [leadId], references: [id])
+  type          ConversationType
+  messages      Message[]
+  startedAt     DateTime         @default(now())
+  endedAt       DateTime?
+
+  // Voice-ready fields for future Twilio integration
+  twilioCallSid String?
+  fromNumber    String?
+  toNumber      String?
+  isAfterHours  Boolean?         @default(false)
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, type])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  businessId     String
+  business       Business     @relation(fields: [businessId], references: [id])
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderLabel    String
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([businessId])
+  @@index([conversationId])
+}
+
+model Appointment {
+  id                    String            @id @default(cuid())
+  businessId            String
+  business              Business          @relation(fields: [businessId], references: [id])
+  leadId                String?
+  lead                  Lead?             @relation(fields: [leadId], references: [id])
+  startsAt              DateTime
+  endsAt                DateTime
+  status                AppointmentStatus @default(PENDING)
+  googleCalendarEventId String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([businessId])
+}
+
+model SmsLog {
+  id                String      @id @default(cuid())
+  businessId        String
+  business          Business    @relation(fields: [businessId], references: [id])
+  toPhone           String
+  fromPhone         String?
+  body              String
+  status            SmsStatus
+  direction         SmsDirection
+  providerMessageId String?
+  errorMessage      String?
+  createdAt         DateTime    @default(now())
+
+  @@index([businessId])
+}
+
+model AiSettings {
+  id                  String    @id @default(cuid())
+  businessId          String    @unique
+  business            Business  @relation(fields: [businessId], references: [id])
+  welcomeMessage      String?
+  qualificationPrompt String?
+  afterHoursMessage   String?
+  timezone            String?   @default("Europe/London")
+  workingHoursJson    String?
+  modelName           String?   @default("gpt-4.1-mini")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
