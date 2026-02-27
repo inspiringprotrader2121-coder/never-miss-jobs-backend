@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { prisma } from '../../config/prisma';
+import { env } from '../../config/env';
 import {
   getCalendarAuthUrl,
   handleCalendarOAuthCallback,
@@ -27,7 +28,7 @@ export async function oauthCallback(req: Request, res: Response, next: NextFunct
     }
     await handleCalendarOAuthCallback(code, businessId);
     // Redirect back to settings page
-    res.redirect(`${process.env['APP_URL'] ?? 'https://app.tradebooking.co.uk'}/dashboard/settings?calendar=connected`);
+    res.redirect(`${env.APP_URL}/dashboard/settings?calendar=connected`);
   } catch (err) {
     next(err);
   }

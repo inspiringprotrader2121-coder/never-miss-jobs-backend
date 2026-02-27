@@ -18,7 +18,7 @@ import { voiceRouter } from './modules/voice/voice.routes';
 import { startAppointmentReminderJob } from './jobs/appointmentReminders';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
-import { apiLimiter, authLimiter, publicChatLimiter, twilioWebhookLimiter } from './middleware/rateLimiter';
+import { apiLimiter, authLimiter, twilioWebhookLimiter } from './middleware/rateLimiter';
 
 const app = express();
 
@@ -54,7 +54,6 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/auth', authLimiter, authRouter);
-app.use('/ai/public', publicChatLimiter);
 app.use('/ai', aiRouter);
 app.use('/billing', billingRouter);
 app.use('/bookings', bookingRouter);
