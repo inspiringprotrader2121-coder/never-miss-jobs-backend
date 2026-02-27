@@ -27,7 +27,9 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional().default('noreply@tradebooking.co.uk'),
-  APP_URL: z.string().optional().default('https://app.tradebooking.co.uk')
+  APP_URL: z.string().optional().default('https://app.tradebooking.co.uk'),
+  // Sentry
+  SENTRY_DSN: z.string().optional()
 });
 
 const parsed = envSchema.safeParse(process.env);

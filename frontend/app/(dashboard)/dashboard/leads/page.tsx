@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Search, UserCheck, UserX, Archive } from 'lucide-react';
-import { api } from '@/lib/api';
-import { Header } from '@/components/layout/Header';
+import { Search, UserCheck, UserX, Archive, CalendarPlus, X } from 'lucide-react';
+import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -43,10 +44,18 @@ const statusColour: Record<string, 'default' | 'secondary' | 'destructive' | 'ou
   ARCHIVED: 'destructive'
 };
 
+interface BookingLead {
+  id: string;
+  fullName: string | null;
+}
+
 export default function LeadsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [bookingLead, setBookingLead] = useState<BookingLead | null>(null);
+  const [bookForm, setBookForm] = useState({ startsAt: '', endsAt: '', sendSms: true });
+  const [bookLoading, setBookLoading] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['leads', page, search],
@@ -75,12 +84,34 @@ export default function LeadsPage() {
     onError: () => toast.error('Failed to archive lead')
   });
 
+  async function handleQuickBook(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bookingLead) return;
+    setBookLoading(true);
+    try {
+      await api.post('/bookings', {
+        leadId: bookingLead.id,
+        startsAt: new Date(bookForm.startsAt).toISOString(),
+        endsAt: new Date(bookForm.endsAt).toISOString(),
+        sendSmsConfirmation: bookForm.sendSms
+      });
+      toast.success(`Appointment booked for ${bookingLead.fullName ?? 'lead'}`);
+      setBookingLead(null);
+      setBookForm({ startsAt: '', endsAt: '', sendSms: true });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to book appointment';
+      toast.error(msg);
+    } finally {
+      setBookLoading(false);
+    }
+  }
+
   const leads: Lead[] = data?.leads ?? [];
   const total: number = data?.total ?? 0;
 
   return (
     <div>
-      <Header title="Leads" />
       <div className="p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
@@ -94,6 +125,65 @@ export default function LeadsPage() {
           </div>
           <span className="text-sm text-muted-foreground">{total} leads</span>
         </div>
+
+        {/* Quick-book modal */}
+        {bookingLead && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarPlus className="h-4 w-4 text-blue-600" />
+                  Book appointment for {bookingLead.fullName ?? 'lead'}
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setBookingLead(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleQuickBook} className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Start time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={bookForm.startsAt}
+                    onChange={(e) => setBookForm((f) => ({ ...f, startsAt: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>End time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={bookForm.endsAt}
+                    onChange={(e) => setBookForm((f) => ({ ...f, endsAt: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <input
+                    id="send-sms"
+                    type="checkbox"
+                    checked={bookForm.sendSms}
+                    onChange={(e) => setBookForm((f) => ({ ...f, sendSms: e.target.checked }))}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="send-sms" className="cursor-pointer font-normal">
+                    Send SMS confirmation to lead
+                  </Label>
+                </div>
+                <div className="flex gap-2 sm:col-span-2">
+                  <Button type="submit" disabled={bookLoading}>
+                    {bookLoading ? 'Booking…' : 'Confirm booking'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setBookingLead(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="rounded-lg border bg-white overflow-hidden">
           <Table>
@@ -147,6 +237,11 @@ export default function LeadsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
+                              onClick={() => setBookingLead({ id: lead.id, fullName: lead.fullName })}
+                            >
+                              <CalendarPlus className="mr-2 h-4 w-4 text-blue-600" /> Book appointment
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => updateStatus.mutate({ id: lead.id, status: 'QUALIFIED' })}
                             >
                               <UserCheck className="mr-2 h-4 w-4" /> Mark Qualified
@@ -185,3 +280,4 @@ export default function LeadsPage() {
     </div>
   );
 }
+

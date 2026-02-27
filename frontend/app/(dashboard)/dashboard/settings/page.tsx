@@ -1,41 +1,64 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
-import { Header } from '@/components/layout/Header';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import {
+  CheckCircle,
+  XCircle,
+  ExternalLink,
+  Calendar,
+  AlertCircle,
+  Zap
+} from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function SettingsPage() {
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface Business {
+  id: string;
+  name: string;
+  phoneNumber: string | null;
+  websiteUrl: string | null;
+}
+
+interface AiSettings {
+  welcomeMessage: string | null;
+  qualificationPrompt: string | null;
+  afterHoursMessage: string | null;
+  timezone: string | null;
+}
+
+interface CalendarStatus {
+  connected: boolean;
+  calendarId: string;
+}
+
+interface Subscription {
+  status: string;
+  planCode: string;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function BusinessTab({ business, loading }: { business: Business | undefined; loading: boolean }) {
   const queryClient = useQueryClient();
-
-  const { data: business, isLoading: bizLoading } = useQuery({
-    queryKey: ['business'],
-    queryFn: () => api.get('/business').then((r) => r.data)
-  });
-
-  const { data: aiSettings, isLoading: aiLoading } = useQuery({
-    queryKey: ['ai-settings'],
-    queryFn: () => api.get('/business/ai-settings').then((r) => r.data)
-  });
-
-  const [bizForm, setBizForm] = useState({ name: '', phoneNumber: '', websiteUrl: '' });
-  const [aiForm, setAiForm] = useState({
-    welcomeMessage: '',
-    qualificationPrompt: '',
-    afterHoursMessage: '',
-    timezone: 'Europe/London'
-  });
+  const [form, setForm] = useState({ name: '', phoneNumber: '', websiteUrl: '' });
 
   useEffect(() => {
     if (business) {
-      setBizForm({
+      setForm({
         name: business.name ?? '',
         phoneNumber: business.phoneNumber ?? '',
         websiteUrl: business.websiteUrl ?? ''
@@ -43,9 +66,108 @@ export default function SettingsPage() {
     }
   }, [business]);
 
+  const save = useMutation({
+    mutationFn: () => api.patch('/business', form),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['business'] });
+      toast.success('Business details saved');
+    },
+    onError: () => toast.error('Failed to save')
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Business details</CardTitle>
+        <CardDescription>Your business name and contact information</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+        ) : (
+          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+            <div className="space-y-1.5">
+              <Label>Business name</Label>
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone number</Label>
+              <Input value={form.phoneNumber ?? ''} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+44 7700 900000" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Website URL</Label>
+              <Input value={form.websiteUrl ?? ''} onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))} placeholder="https://tradebooking.co.uk" />
+            </div>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PasswordTab() {
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (form.newPassword.length < 8) { toast.error('New password must be at least 8 characters'); return; }
+    if (form.newPassword !== form.confirm) { toast.error('Passwords do not match'); return; }
+    setLoading(true);
+    try {
+      await api.post('/auth/change-password', {
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword
+      });
+      toast.success('Password updated successfully');
+      setForm({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to update password';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Change password</CardTitle>
+        <CardDescription>Update your account password</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-1.5">
+            <Label>Current password</Label>
+            <Input type="password" value={form.currentPassword} onChange={(e) => setForm((f) => ({ ...f, currentPassword: e.target.value }))} required autoComplete="current-password" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>New password</Label>
+            <Input type="password" value={form.newPassword} onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))} required autoComplete="new-password" placeholder="At least 8 characters" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Confirm new password</Label>
+            <Input type="password" value={form.confirm} onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))} required autoComplete="new-password" />
+          </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Updating…' : 'Update password'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AiTab({ aiSettings, loading }: { aiSettings: AiSettings | undefined; loading: boolean }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({ welcomeMessage: '', qualificationPrompt: '', afterHoursMessage: '', timezone: 'Europe/London' });
+
   useEffect(() => {
     if (aiSettings) {
-      setAiForm({
+      setForm({
         welcomeMessage: aiSettings.welcomeMessage ?? '',
         qualificationPrompt: aiSettings.qualificationPrompt ?? '',
         afterHoursMessage: aiSettings.afterHoursMessage ?? '',
@@ -54,17 +176,8 @@ export default function SettingsPage() {
     }
   }, [aiSettings]);
 
-  const updateBusiness = useMutation({
-    mutationFn: () => api.patch('/business', bizForm),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['business'] });
-      toast.success('Business details saved');
-    },
-    onError: () => toast.error('Failed to save')
-  });
-
-  const updateAi = useMutation({
-    mutationFn: () => api.patch('/business/ai-settings', aiForm),
+  const save = useMutation({
+    mutationFn: () => api.patch('/business/ai-settings', form),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-settings'] });
       toast.success('AI settings saved');
@@ -72,156 +185,318 @@ export default function SettingsPage() {
     onError: () => toast.error('Failed to save')
   });
 
-  const startPortal = useMutation({
-    mutationFn: () =>
-      api.post('/billing/portal-session', {
-        returnUrl: window.location.href
-      }),
-    onSuccess: (res) => {
-      window.location.href = res.data.url;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>AI assistant</CardTitle>
+        <CardDescription>Customise how your AI chat widget behaves</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+        ) : (
+          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+            <div className="space-y-1.5">
+              <Label>Welcome message</Label>
+              <Input value={form.welcomeMessage} onChange={(e) => setForm((f) => ({ ...f, welcomeMessage: e.target.value }))} placeholder="Hi! How can we help with your job today?" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Qualification instructions</Label>
+              <Input value={form.qualificationPrompt} onChange={(e) => setForm((f) => ({ ...f, qualificationPrompt: e.target.value }))} placeholder="Always ask for job type, location, and urgency" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>After-hours message</Label>
+              <Input value={form.afterHoursMessage} onChange={(e) => setForm((f) => ({ ...f, afterHoursMessage: e.target.value }))} placeholder="We're closed right now. We'll call you back tomorrow." />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Timezone</Label>
+              <Input value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} placeholder="Europe/London" />
+              <p className="text-xs text-muted-foreground">Used for after-hours detection. E.g. Europe/London, Europe/Paris</p>
+            </div>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? 'Saving…' : 'Save AI settings'}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CalendarTab() {
+  const queryClient = useQueryClient();
+
+  const { data: status, isLoading } = useQuery<CalendarStatus>({
+    queryKey: ['calendar-status'],
+    queryFn: () => api.get('/business/calendar/status').then((r) => r.data)
+  });
+
+  const connect = useMutation({
+    mutationFn: () => api.get('/business/calendar/connect').then((r) => r.data),
+    onSuccess: (data: { url: string }) => {
+      window.location.href = data.url;
     },
-    onError: () => toast.error('Could not open billing portal')
+    onError: () => toast.error('Could not start Google Calendar connection')
+  });
+
+  const disconnect = useMutation({
+    mutationFn: () => api.delete('/business/calendar/disconnect'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar-status'] });
+      toast.success('Google Calendar disconnected');
+    },
+    onError: () => toast.error('Failed to disconnect')
   });
 
   return (
-    <div>
-      <Header title="Settings" />
-      <div className="p-6 max-w-3xl space-y-6">
-        <Tabs defaultValue="business">
-          <TabsList>
-            <TabsTrigger value="business">Business</TabsTrigger>
-            <TabsTrigger value="ai">AI assistant</TabsTrigger>
-            <TabsTrigger value="billing">Billing</TabsTrigger>
-          </TabsList>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Google Calendar
+        </CardTitle>
+        <CardDescription>
+          Sync appointments automatically to your Google Calendar
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <Skeleton className="h-10 w-48" />
+        ) : status?.connected ? (
+          <>
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Connected</p>
+                <p className="text-xs text-green-600">
+                  Appointments sync to calendar: <strong>{status.calendarId}</strong>
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              New and updated appointments are automatically added to your Google Calendar.
+              Cancelled appointments are removed.
+            </p>
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => disconnect.mutate()}
+              disabled={disconnect.isPending}
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              {disconnect.isPending ? 'Disconnecting…' : 'Disconnect Google Calendar'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <XCircle className="h-5 w-5 text-slate-400" />
+              <p className="text-sm text-slate-600">Not connected</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Connect your Google account to automatically sync all appointments.
+              You&apos;ll be redirected to Google to grant access — we only request
+              permission to create and manage calendar events.
+            </p>
+            <Button onClick={() => connect.mutate()} disabled={connect.isPending}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              {connect.isPending ? 'Connecting…' : 'Connect Google Calendar'}
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
-          <TabsContent value="business" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business details</CardTitle>
-                <CardDescription>Update your business name and contact info</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {bizLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
-                  </div>
-                ) : (
-                  <form
-                    className="space-y-4"
-                    onSubmit={(e) => { e.preventDefault(); updateBusiness.mutate(); }}
-                  >
-                    <div className="space-y-1">
-                      <Label>Business name</Label>
-                      <Input
-                        value={bizForm.name}
-                        onChange={(e) => setBizForm((f) => ({ ...f, name: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Phone number</Label>
-                      <Input
-                        value={bizForm.phoneNumber}
-                        onChange={(e) => setBizForm((f) => ({ ...f, phoneNumber: e.target.value }))}
-                        placeholder="+44 7700 900000"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Website URL</Label>
-                      <Input
-                        value={bizForm.websiteUrl}
-                        onChange={(e) => setBizForm((f) => ({ ...f, websiteUrl: e.target.value }))}
-                        placeholder="https://tradebooking.co.uk"
-                      />
-                    </div>
-                    <Button type="submit" disabled={updateBusiness.isPending}>
-                      {updateBusiness.isPending ? 'Saving…' : 'Save changes'}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+function BillingTab() {
+  const { data: statsData } = useQuery<{ subscription: Subscription | null }>({
+    queryKey: ['dashboard-stats'],
+    queryFn: () => api.get('/business/stats').then((r) => r.data)
+  });
 
-          <TabsContent value="ai" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI assistant configuration</CardTitle>
-                <CardDescription>Customise how your AI chat widget behaves</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {aiLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
-                  </div>
-                ) : (
-                  <form
-                    className="space-y-4"
-                    onSubmit={(e) => { e.preventDefault(); updateAi.mutate(); }}
-                  >
-                    <div className="space-y-1">
-                      <Label>Welcome message</Label>
-                      <Input
-                        value={aiForm.welcomeMessage}
-                        onChange={(e) => setAiForm((f) => ({ ...f, welcomeMessage: e.target.value }))}
-                        placeholder="Hi! How can we help with your job today?"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Qualification instructions</Label>
-                      <Input
-                        value={aiForm.qualificationPrompt}
-                        onChange={(e) => setAiForm((f) => ({ ...f, qualificationPrompt: e.target.value }))}
-                        placeholder="Always ask for job type, location, and urgency"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>After-hours message</Label>
-                      <Input
-                        value={aiForm.afterHoursMessage}
-                        onChange={(e) => setAiForm((f) => ({ ...f, afterHoursMessage: e.target.value }))}
-                        placeholder="We're closed right now. We'll call you back tomorrow."
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Timezone</Label>
-                      <Input
-                        value={aiForm.timezone}
-                        onChange={(e) => setAiForm((f) => ({ ...f, timezone: e.target.value }))}
-                        placeholder="Europe/London"
-                      />
-                    </div>
-                    <Button type="submit" disabled={updateAi.isPending}>
-                      {updateAi.isPending ? 'Saving…' : 'Save AI settings'}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+  const sub = statsData?.subscription;
 
-          <TabsContent value="billing" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Billing</CardTitle>
-                <CardDescription>Manage your subscription and payment method</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Click below to open the Stripe billing portal where you can update your payment
-                  method, view invoices, or cancel your subscription.
+  const portal = useMutation({
+    mutationFn: () => api.post('/billing/portal-session', { returnUrl: window.location.href }),
+    onSuccess: (res) => { window.location.href = res.data.url; },
+    onError: () => toast.error('Could not open billing portal')
+  });
+
+  const checkout = useMutation({
+    mutationFn: () =>
+      api.post('/billing/checkout-session', {
+        successUrl: `${window.location.origin}/dashboard/settings?tab=billing&upgraded=1`,
+        cancelUrl: window.location.href
+      }),
+    onSuccess: (res) => { window.location.href = res.data.url; },
+    onError: () => toast.error('Could not start checkout')
+  });
+
+  const STATUS_BADGE: Record<string, string> = {
+    ACTIVE: 'bg-green-100 text-green-800',
+    TRIALING: 'bg-blue-100 text-blue-800',
+    PAST_DUE: 'bg-red-100 text-red-800',
+    CANCELED: 'bg-gray-100 text-gray-700'
+  };
+
+  const trialDaysLeft =
+    sub?.status === 'TRIALING' && sub.trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(sub.trialEndsAt).getTime() - Date.now()) / 86400000))
+      : null;
+
+  const needsUpgrade = !sub || sub.status === 'CANCELED' || sub.status === 'PAST_DUE' || (sub.status === 'TRIALING' && trialDaysLeft !== null && trialDaysLeft <= 3);
+
+  return (
+    <div className="space-y-4">
+      {/* Upgrade prompt */}
+      {needsUpgrade && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Zap className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+              <div className="flex-1 space-y-2">
+                <p className="font-semibold text-blue-900">
+                  {sub?.status === 'CANCELED'
+                    ? 'Your subscription has ended'
+                    : sub?.status === 'PAST_DUE'
+                    ? 'Payment overdue'
+                    : trialDaysLeft !== null
+                    ? `Trial ends in ${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''}`
+                    : 'Upgrade to continue'}
+                </p>
+                <p className="text-sm text-blue-700">
+                  Subscribe to keep your AI chat, bookings, and SMS features running.
                 </p>
                 <Button
-                  onClick={() => startPortal.mutate()}
-                  disabled={startPortal.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => checkout.mutate()}
+                  disabled={checkout.isPending}
                 >
-                  {startPortal.isPending ? 'Opening…' : 'Manage billing'}
+                  <Zap className="mr-2 h-4 w-4" />
+                  {checkout.isPending ? 'Loading…' : 'Subscribe now'}
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Billing</CardTitle>
+          <CardDescription>Manage your subscription and payment method</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {sub ? (
+            <div className="flex items-center gap-3">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[sub.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                {sub.status}
+              </span>
+              <span className="text-sm text-muted-foreground capitalize">{sub.planCode}</span>
+              {sub.currentPeriodEnd && sub.status === 'ACTIVE' && (
+                <span className="text-xs text-muted-foreground">
+                  · Renews {new Date(sub.currentPeriodEnd).toLocaleDateString('en-GB')}
+                </span>
+              )}
+              {trialDaysLeft !== null && (
+                <Badge variant="secondary">{trialDaysLeft}d trial left</Badge>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <AlertCircle className="h-4 w-4" />
+              No active subscription
+            </div>
+          )}
+
+          {sub && sub.status !== 'CANCELED' && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Update your payment method, download invoices, or cancel your subscription
+                through the Stripe billing portal.
+              </p>
+              <Button variant="outline" onClick={() => portal.mutate()} disabled={portal.isPending}>
+                {portal.isPending ? 'Opening…' : 'Manage billing →'}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
+
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get('tab') ?? 'business';
+
+  const { data: business, isLoading: bizLoading } = useQuery<Business>({
+    queryKey: ['business'],
+    queryFn: () => api.get('/business').then((r) => r.data)
+  });
+
+  const { data: aiSettings, isLoading: aiLoading } = useQuery<AiSettings>({
+    queryKey: ['ai-settings'],
+    queryFn: () => api.get('/business/ai-settings').then((r) => r.data)
+  });
+
+  // Show success toast if redirected back after Google Calendar connect
+  useEffect(() => {
+    if (searchParams.get('calendar') === 'connected') {
+      toast.success('Google Calendar connected successfully!');
+    }
+    if (searchParams.get('upgraded') === '1') {
+      toast.success('Subscription activated! Welcome aboard.');
+    }
+  }, [searchParams]);
+
+  return (
+    <div className="p-6 max-w-3xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground text-sm">Manage your account and integrations.</p>
+      </div>
+
+      <Tabs defaultValue={defaultTab}>
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="business">Business</TabsTrigger>
+          <TabsTrigger value="ai">AI assistant</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="business" className="mt-4">
+          <BusinessTab business={business} loading={bizLoading} />
+        </TabsContent>
+
+        <TabsContent value="ai" className="mt-4">
+          <AiTab aiSettings={aiSettings} loading={aiLoading} />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-4">
+          <CalendarTab />
+        </TabsContent>
+
+        <TabsContent value="password" className="mt-4">
+          <PasswordTab />
+        </TabsContent>
+
+        <TabsContent value="billing" className="mt-4">
+          <BillingTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

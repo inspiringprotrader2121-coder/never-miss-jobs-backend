@@ -1,3 +1,6 @@
+import { initSentry } from './config/sentry';
+initSentry(); // Must be called before anything else
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

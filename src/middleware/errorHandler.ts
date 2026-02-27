@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { Sentry } from '../config/sentry';
 
 export class AppError extends Error {
   statusCode: number;
@@ -38,6 +39,8 @@ export function errorHandler(
     return;
   }
 
+  // Report unexpected errors to Sentry
+  Sentry.captureException(err);
   // eslint-disable-next-line no-console
   console.error(err);
   res.status(500).json({ message: 'Internal server error' });
