@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth';
+import { requireActiveSubscription } from '../../middleware/requireActiveSubscription';
 import * as bookingController from './booking.controller';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, requireActiveSubscription);
 
 router.get('/', bookingController.listAppointments);
 router.get('/:id', bookingController.getAppointment);

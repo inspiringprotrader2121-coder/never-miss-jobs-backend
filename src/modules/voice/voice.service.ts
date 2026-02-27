@@ -1,5 +1,4 @@
 import { prisma } from '../../config/prisma';
-import { AppError } from '../../middleware/errorHandler';
 import { sendSms } from '../sms/sms.service';
 
 interface TwilioCallParams {

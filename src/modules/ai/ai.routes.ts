@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth';
+import { requireActiveSubscription } from '../../middleware/requireActiveSubscription';
 import * as aiController from './ai.controller';
 
 const router = Router();
@@ -16,7 +17,7 @@ router.get('/test-protected', authenticate, (req: Request, res: Response) => {
 });
 
 // Protected AI chat for dashboard/internal use
-router.post('/chat', authenticate, aiController.chatDashboard);
+router.post('/chat', authenticate, requireActiveSubscription, aiController.chatDashboard);
 
 // Public chat endpoint for website widget - business identified by path param
 router.post('/public/chat/:businessId', aiController.chatPublic);

@@ -3,6 +3,7 @@ import { AppointmentStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { sendSms, buildAppointmentConfirmationSms } from '../sms/sms.service';
+import { syncAppointmentToCalendar, deleteCalendarEvent } from './calendar.service';
 
 const createAppointmentSchema = z.object({
   leadId: z.string().cuid().optional(),
@@ -132,6 +133,9 @@ export async function createAppointment(
     }
   });
 
+  // Sync to Google Calendar (non-fatal if not connected)
+  syncAppointmentToCalendar(businessId, appointment.id).catch(() => {});
+
   // Send SMS confirmation if lead has a phone number
   if (input.sendSmsConfirmation && lead?.phone) {
     const timezone = business.aiSettings?.timezone ?? 'Europe/London';
@@ -197,6 +201,11 @@ export async function updateAppointment(
     }
   });
 
+  // Re-sync to Google Calendar if times changed (non-fatal)
+  if (input.startsAt || input.endsAt) {
+    syncAppointmentToCalendar(businessId, appointmentId).catch(() => {});
+  }
+
   // Re-send SMS if time changed and lead has a phone
   if (input.sendSmsConfirmation && existing.lead?.phone) {
     const business = await prisma.business.findUnique({
@@ -235,21 +244,11 @@ export async function cancelAppointment(
     throw new AppError('Appointment not found', 404);
   }
 
+  // Remove from Google Calendar (non-fatal)
+  deleteCalendarEvent(businessId, appointmentId).catch(() => {});
+
   return prisma.appointment.update({
     where: { id: appointmentId },
     data: { status: AppointmentStatus.CANCELLED }
   });
-}
-
-/*
- * Google Calendar integration stub.
- * When ready, install `googleapis` and implement OAuth2 + event creation here.
- * The `googleCalendarEventId` field on Appointment is ready to store the event ID.
- */
-export async function syncToGoogleCalendar(
-  _businessId: string,
-  _appointmentId: string
-): Promise<void> {
-  // TODO: implement Google Calendar OAuth2 + event creation
-  throw new AppError('Google Calendar integration is not yet configured', 501);
 }
