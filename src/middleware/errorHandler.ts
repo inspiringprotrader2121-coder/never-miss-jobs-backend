@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { ZodError } from 'zod';
 
 export class AppError extends Error {
   statusCode: number;
@@ -9,15 +10,26 @@ export class AppError extends Error {
   }
 }
 
-// Centralized error handler for controllers/services
 export function errorHandler(
   err: unknown,
-  req: Request,
+  _req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction
+  _next: NextFunction
 ) {
   if (res.headersSent) {
+    return;
+  }
+
+  // Zod validation errors → 422 with field-level detail
+  if (err instanceof ZodError) {
+    res.status(422).json({
+      message: 'Validation failed',
+      errors: err.errors.map((e) => ({
+        field: e.path.join('.'),
+        message: e.message
+      }))
+    });
     return;
   }
 

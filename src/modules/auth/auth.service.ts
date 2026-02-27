@@ -51,7 +51,7 @@ export async function register(input: unknown) {
       data: {
         businessId: business.id,
         welcomeMessage:
-          'Hi, we are currently using Never Miss Another Job System. How can we help with your job today?'
+          'Hi, thanks for contacting us via TradeBooking. How can we help with your job today?'
       }
     });
 

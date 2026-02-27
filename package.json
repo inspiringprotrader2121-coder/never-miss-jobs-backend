@@ -1,7 +1,7 @@
 {
-  "name": "never-miss-another-job-system-backend",
+  "name": "tradebooking-backend",
   "version": "0.1.0",
-  "description": "Multi-tenant SaaS backend for UK trades AI automation",
+  "description": "Multi-tenant SaaS backend for UK trades AI automation – tradebooking.co.uk",
   "main": "dist/server.js",
   "type": "commonjs",
   "scripts": {
@@ -23,13 +23,16 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@types/morgan": "^1.9.10",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.2.1",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
     "openai": "^4.0.0",
     "stripe": "^16.0.0",
     "twilio": "^5.0.0",
