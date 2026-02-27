@@ -1,287 +1,480 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
-  Zap,
-  MessageSquare,
-  Phone,
-  CalendarDays,
-  Users,
-  CreditCard,
-  CheckCircle,
   ArrowRight,
-  Star
+  CheckCircle,
+  Star,
+  Zap,
+  Bot,
+  Shield,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { LandingNav } from '@/components/landing/LandingNav';
+import { BentoGrid } from '@/components/landing/BentoGrid';
+import { ROICalculator } from '@/components/landing/ROICalculator';
 
-const FEATURES = [
+/* ─── Reusable fade-up wrapper ─── */
+function FadeUp({
+  children,
+  delay = 0,
+  className = ''
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.55, delay, ease: 'easeOut' }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─── How it works steps ─── */
+const STEPS = [
   {
-    icon: MessageSquare,
-    title: 'AI Website Chat',
-    description:
-      'Your AI assistant qualifies leads 24/7 — captures name, job type, location, and urgency before you even pick up the phone.'
+    num: '01',
+    title: 'Add the widget to your site',
+    desc: 'Paste one line of code. Your AI chat goes live in under 5 minutes.',
+    color: 'text-emerald-400'
   },
   {
-    icon: Phone,
-    title: 'Missed Call Capture',
-    description:
-      'Never lose a job to voicemail again. When you miss a call, our AI takes a message, transcribes it, and alerts you instantly.'
+    num: '02',
+    title: 'AI qualifies every lead',
+    desc: 'GPT-4o-mini asks the right questions, captures contact details, and books appointments automatically.',
+    color: 'text-violet-400'
   },
   {
-    icon: CalendarDays,
-    title: 'Instant Booking',
-    description:
-      'Leads can book directly from the chat. Appointments sync to Google Calendar and SMS confirmations go out automatically.'
-  },
-  {
-    icon: Users,
-    title: 'Built-in CRM',
-    description:
-      'Every lead, conversation, and appointment in one place. See the full history of every customer at a glance.'
-  },
-  {
-    icon: Zap,
-    title: 'SMS Automation',
-    description:
-      'Appointment confirmations, 24-hour reminders, and follow-ups — all sent automatically so you never have to think about it.'
-  },
-  {
-    icon: CreditCard,
-    title: 'Simple Pricing',
-    description:
-      'One flat monthly fee. No per-message charges, no hidden costs. Cancel any time.'
+    num: '03',
+    title: 'You get paid, not interrupted',
+    desc: 'SMS confirmations, calendar syncs, and reminders go out automatically. You just show up.',
+    color: 'text-blue-400'
   }
 ];
 
+/* ─── Testimonials ─── */
 const TESTIMONIALS = [
   {
     name: 'Dave Holt',
-    trade: 'Plumber, Manchester',
+    trade: 'Plumber · Manchester',
     quote:
-      "I was missing 3–4 jobs a week just from missed calls. TradeBooking fixed that in the first week. Best £49 I spend every month."
+      "I was missing 3–4 jobs a week from missed calls. TradeBooking fixed that in the first week. Best £49 I spend every month."
   },
   {
     name: 'Sarah Briggs',
-    trade: 'Electrician, Birmingham',
+    trade: 'Electrician · Birmingham',
     quote:
-      "The AI chat on my website books jobs while I'm on site. I came home to 2 new bookings I didn't even know about."
+      "The AI chat books jobs while I'm on site. I came home to 2 new bookings I didn't even know about."
   },
   {
     name: 'Mike Connell',
-    trade: 'Roofer, Leeds',
+    trade: 'Roofer · Leeds',
     quote:
       "Setup took 20 minutes. Now every missed call gets a voicemail, a transcript, and an SMS to me. It's like having a receptionist."
   }
 ];
 
-const PRICING = [
-  { label: 'AI website chat widget', included: true },
-  { label: 'Missed call capture & voicemail', included: true },
-  { label: 'Automatic SMS confirmations', included: true },
-  { label: '24-hour appointment reminders', included: true },
-  { label: 'Google Calendar sync', included: true },
-  { label: 'Built-in CRM & lead tracking', included: true },
-  { label: 'Team members (up to 5)', included: true },
-  { label: 'No setup fees', included: true }
+/* ─── Pricing features ─── */
+const PRICING_FEATURES = [
+  'AI website chat widget (GPT-4o-mini)',
+  'Missed call capture & voicemail transcription',
+  'Automatic SMS confirmations (Twilio)',
+  '24-hour appointment reminders',
+  'Google Calendar sync',
+  'Built-in CRM & lead tracking',
+  'Team members (up to 5)',
+  'No setup fees · Cancel any time'
+];
+
+/* ─── Trust badges ─── */
+const TRUST = [
+  { icon: Bot, label: 'GPT-4o-mini AI' },
+  { icon: Shield, label: 'GDPR compliant' },
+  { icon: BarChart3, label: '99.9% uptime' },
+  { icon: Zap, label: 'Live in 5 mins' }
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Zap className="h-6 w-6 text-blue-600" />
-            <span className="text-xl font-bold">TradeBooking</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Sign in</Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm">Start free trial</Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
+      <LandingNav />
 
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 py-20 text-center">
-        <Badge className="mb-6 bg-blue-100 text-blue-700 hover:bg-blue-100">
-          Built for UK trades
-        </Badge>
-        <h1 className="mx-auto max-w-3xl text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-          Never miss another{' '}
-          <span className="text-blue-600">job</span> again
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">
-          TradeBooking gives plumbers, electricians, and roofers an AI assistant that
-          answers enquiries, captures missed calls, books appointments, and sends SMS
-          confirmations — automatically, 24/7.
-        </p>
-        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link href="/register">
-            <Button size="lg" className="gap-2 px-8">
-              Start your free 14-day trial
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <p className="text-sm text-slate-400">No credit card required</p>
+      {/* ══════════════════════════════════════
+          HERO
+      ══════════════════════════════════════ */}
+      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
+        {/* Background glow blobs */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-emerald-500/10 blur-[120px]" />
+          <div className="absolute top-40 right-0 h-[400px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
         </div>
 
-        {/* Hero visual */}
-        <div className="mt-16 overflow-hidden rounded-2xl border shadow-2xl">
-          <div className="flex items-center gap-1.5 bg-slate-100 px-4 py-3">
-            <div className="h-3 w-3 rounded-full bg-red-400" />
-            <div className="h-3 w-3 rounded-full bg-yellow-400" />
-            <div className="h-3 w-3 rounded-full bg-green-400" />
-            <span className="ml-3 text-xs text-slate-400">app.tradebooking.co.uk/dashboard</span>
-          </div>
-          <div className="bg-slate-50 p-6 text-left">
-            <div className="grid gap-4 sm:grid-cols-4">
-              {[
-                { label: 'New leads today', value: '4', color: 'text-purple-600' },
-                { label: 'Upcoming appointments', value: '7', color: 'text-green-600' },
-                { label: 'AI conversations', value: '23', color: 'text-blue-600' },
-                { label: 'Missed calls captured', value: '2', color: 'text-orange-600' }
-              ].map((s) => (
-                <div key={s.label} className="rounded-xl border bg-white p-4 shadow-sm">
-                  <p className="text-xs text-slate-500">{s.label}</p>
-                  <p className={`mt-1 text-3xl font-bold ${s.color}`}>{s.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="bg-slate-50 py-20">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold">Everything you need to win more jobs</h2>
-            <p className="mt-3 text-slate-500">
-              One platform that handles your enquiries, bookings, and follow-ups.
-            </p>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, description }) => (
-              <div
-                key={title}
-                className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
+        <div className="relative mx-auto max-w-6xl">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+            {/* Left — copy */}
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
               >
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
-                  <Icon className="h-5 w-5 text-blue-600" />
-                </div>
-                <h3 className="font-semibold text-slate-900">{title}</h3>
-                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 uppercase tracking-widest mb-6">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Built for UK trades
+                </span>
+              </motion.div>
 
-      {/* Testimonials */}
-      <section className="py-20">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-center text-3xl font-bold mb-12">
-            Trusted by UK tradespeople
-          </h2>
-          <div className="grid gap-6 sm:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="rounded-2xl border bg-white p-6 shadow-sm">
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <motion.h1
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl"
+              >
+                Your Trades Business{' '}
+                <span className="bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-300 bg-clip-text text-transparent animate-gradient-x">
+                  on Autopilot.
+                </span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="mt-6 text-lg text-slate-400 leading-relaxed max-w-lg"
+              >
+                TradeBooking gives plumbers, electricians, and roofers an AI assistant
+                that qualifies leads, books appointments, and sends SMS confirmations —
+                automatically, 24/7.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="mt-8 flex flex-wrap items-center gap-4"
+              >
+                <Link href="/register">
+                  <Button
+                    size="lg"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-white shadow-xl shadow-emerald-500/30 gap-2 px-7"
+                  >
+                    Start free 14-day trial
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <p className="text-sm text-slate-500">No credit card required</p>
+              </motion.div>
+
+              {/* Trust badges */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="mt-10 flex flex-wrap gap-4"
+              >
+                {TRUST.map(({ icon: Icon, label }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-1.5 text-xs text-slate-400"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-emerald-500" />
+                    {label}
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Right — AI booking preview */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="relative"
+            >
+              {/* Outer glow */}
+              <div className="absolute inset-0 rounded-3xl bg-emerald-500/10 blur-2xl scale-105 pointer-events-none" />
+
+              <div className="relative rounded-3xl border border-white/10 bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl">
+                {/* Window chrome */}
+                <div className="flex items-center gap-1.5 border-b border-white/10 bg-slate-800/60 px-4 py-3">
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
+                  <span className="ml-3 text-xs text-slate-500">TradeBooking AI · Live chat</span>
+                  <span className="ml-auto flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Online
+                  </span>
+                </div>
+
+                {/* Chat messages */}
+                <div className="p-5 space-y-3">
+                  {[
+                    { from: 'ai', text: "Hi! I'm the TradeBooking AI. What job do you need done?" },
+                    { from: 'user', text: 'Need a boiler service, quite urgent' },
+                    { from: 'ai', text: "Got it — boiler service. What area are you in?" },
+                    { from: 'user', text: 'Sheffield, S10' },
+                    { from: 'ai', text: "I have Thursday 9am or Friday 2pm available. Which works for you?" },
+                    { from: 'user', text: 'Thursday 9am please' },
+                    { from: 'ai', text: "Booked ✓ You'll get an SMS confirmation shortly." },
+                  ].map((msg, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + i * 0.12, duration: 0.35 }}
+                      className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                          msg.from === 'user'
+                            ? 'bg-slate-700 text-slate-200 rounded-br-sm'
+                            : 'bg-emerald-500/20 border border-emerald-500/25 text-emerald-100 rounded-bl-sm'
+                        }`}
+                      >
+                        {msg.from === 'ai' && (
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-400 mb-0.5">
+                            AI Assistant
+                          </p>
+                        )}
+                        {msg.text}
+                      </div>
+                    </motion.div>
                   ))}
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed italic">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="mt-4">
-                  <p className="font-semibold text-sm">{t.name}</p>
-                  <p className="text-xs text-slate-400">{t.trade}</p>
-                </div>
+
+                {/* Booked confirmation banner */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.8, duration: 0.4 }}
+                  className="mx-5 mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 flex items-center gap-3"
+                >
+                  <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-300">Appointment booked</p>
+                    <p className="text-[11px] text-slate-400">Thu 9am · Boiler service · Sheffield S10 · SMS sent</p>
+                  </div>
+                </motion.div>
               </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          BENTO GRID
+      ══════════════════════════════════════ */}
+      <BentoGrid />
+
+      {/* ══════════════════════════════════════
+          HOW IT WORKS
+      ══════════════════════════════════════ */}
+      <section id="how-it-works" className="py-24 px-4 bg-slate-900/50">
+        <div className="mx-auto max-w-4xl">
+          <FadeUp className="text-center mb-14">
+            <span className="inline-block rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-400 uppercase tracking-widest mb-4">
+              How it works
+            </span>
+            <h2 className="text-3xl font-extrabold sm:text-4xl">
+              Up and running in 20 minutes
+            </h2>
+          </FadeUp>
+
+          <div className="relative">
+            {/* Connecting line */}
+            <div className="absolute left-8 top-8 bottom-8 w-px bg-gradient-to-b from-emerald-500/40 via-violet-500/40 to-blue-500/40 hidden md:block" />
+
+            <div className="space-y-8">
+              {STEPS.map((step, i) => (
+                <FadeUp key={step.num} delay={i * 0.15}>
+                  <div className="flex gap-6 items-start">
+                    <div className={`flex-shrink-0 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-slate-800 text-2xl font-extrabold ${step.color}`}>
+                      {step.num}
+                    </div>
+                    <div className="pt-2">
+                      <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                      <p className="mt-1 text-slate-400 leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                </FadeUp>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          ROI CALCULATOR
+      ══════════════════════════════════════ */}
+      <ROICalculator />
+
+      {/* ══════════════════════════════════════
+          TESTIMONIALS
+      ══════════════════════════════════════ */}
+      <section className="py-24 px-4 bg-slate-900/50">
+        <div className="mx-auto max-w-6xl">
+          <FadeUp className="text-center mb-14">
+            <h2 className="text-3xl font-extrabold sm:text-4xl">
+              Trusted by UK tradespeople
+            </h2>
+            <p className="mt-3 text-slate-400">Real results from real businesses.</p>
+          </FadeUp>
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            {TESTIMONIALS.map((t, i) => (
+              <FadeUp key={t.name} delay={i * 0.1}>
+                <div className="rounded-3xl border border-white/10 bg-slate-800/60 p-6 h-full flex flex-col">
+                  <div className="flex gap-0.5 mb-4">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Star key={j} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-slate-300 text-sm leading-relaxed italic flex-1">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div className="mt-5 pt-4 border-t border-white/10">
+                    <p className="font-semibold text-white text-sm">{t.name}</p>
+                    <p className="text-xs text-slate-500">{t.trade}</p>
+                  </div>
+                </div>
+              </FadeUp>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="bg-slate-50 py-20">
-        <div className="mx-auto max-w-md px-4 text-center">
-          <h2 className="text-3xl font-bold">Simple, honest pricing</h2>
-          <p className="mt-3 text-slate-500">One plan. Everything included.</p>
+      {/* ══════════════════════════════════════
+          PRICING
+      ══════════════════════════════════════ */}
+      <section id="pricing" className="py-24 px-4">
+        <div className="mx-auto max-w-lg">
+          <FadeUp className="text-center mb-12">
+            <span className="inline-block rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400 uppercase tracking-widest mb-4">
+              Pricing
+            </span>
+            <h2 className="text-3xl font-extrabold sm:text-4xl">Simple, honest pricing</h2>
+            <p className="mt-3 text-slate-400">One plan. Everything included. No surprises.</p>
+          </FadeUp>
 
-          <div className="mt-10 rounded-2xl border-2 border-blue-600 bg-white p-8 shadow-xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">
-              TradeBooking Pro
-            </p>
-            <div className="mt-4 flex items-end justify-center gap-1">
-              <span className="text-5xl font-extrabold">£49</span>
-              <span className="mb-1 text-slate-400">/month</span>
-            </div>
-            <p className="mt-2 text-sm text-slate-400">
-              14-day free trial · Cancel any time
-            </p>
+          <FadeUp delay={0.1}>
+            <div className="relative rounded-3xl border-2 border-emerald-500/50 bg-slate-900 p-8 shadow-2xl shadow-emerald-500/10 overflow-hidden">
+              {/* Glow */}
+              <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-40 w-80 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
 
-            <ul className="mt-8 space-y-3 text-left">
-              {PRICING.map(({ label, included }) => (
-                <li key={label} className="flex items-center gap-3 text-sm">
-                  <CheckCircle
-                    className={`h-4 w-4 shrink-0 ${included ? 'text-green-500' : 'text-slate-300'}`}
-                  />
-                  <span className={included ? 'text-slate-700' : 'text-slate-400 line-through'}>
-                    {label}
+              <div className="relative">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold uppercase tracking-widest text-emerald-400">
+                    TradeBooking Pro
+                  </p>
+                  <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-xs text-emerald-400 font-medium">
+                    Most popular
                   </span>
-                </li>
-              ))}
-            </ul>
+                </div>
 
-            <Link href="/register" className="mt-8 block">
-              <Button className="w-full" size="lg">
-                Start free trial
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+                <div className="flex items-end gap-1 mt-4">
+                  <span className="text-6xl font-extrabold text-white">£49</span>
+                  <span className="mb-2 text-slate-400">/month</span>
+                </div>
+                <p className="text-sm text-slate-500 mt-1">14-day free trial · Cancel any time</p>
+
+                <ul className="mt-8 space-y-3">
+                  {PRICING_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-3 text-sm text-slate-300">
+                      <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href="/register" className="mt-8 block">
+                  <Button
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/30 gap-2"
+                    size="lg"
+                  >
+                    Start free trial
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </FadeUp>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 text-center">
-        <div className="mx-auto max-w-2xl px-4">
-          <h2 className="text-3xl font-bold">
-            Ready to stop missing jobs?
-          </h2>
-          <p className="mt-4 text-slate-500">
-            Join tradespeople across the UK who use TradeBooking to win more work
-            without working more hours.
+      {/* ══════════════════════════════════════
+          FINAL CTA
+      ══════════════════════════════════════ */}
+      <section className="py-24 px-4">
+        <FadeUp>
+          <div className="mx-auto max-w-3xl text-center rounded-3xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 p-12 relative overflow-hidden">
+            <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none" />
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-40 w-80 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+            <div className="relative">
+              <h2 className="text-3xl font-extrabold sm:text-4xl">
+                Ready to stop missing jobs?
+              </h2>
+              <p className="mt-4 text-slate-400 max-w-md mx-auto">
+                Join tradespeople across the UK who use TradeBooking to win more work
+                without working more hours.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href="/register">
+                  <Button
+                    size="lg"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-white shadow-xl shadow-emerald-500/30 gap-2 px-8"
+                  >
+                    Get started free
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white/20 text-slate-300 hover:bg-white/10"
+                  >
+                    Sign in to dashboard
+                  </Button>
+                </Link>
+              </div>
+              <p className="mt-4 text-xs text-slate-500">No credit card required · 14-day free trial</p>
+            </div>
+          </div>
+        </FadeUp>
+      </section>
+
+      {/* ══════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════ */}
+      <footer className="border-t border-white/10 py-10 px-4">
+        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500">
+              <Zap className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span className="font-bold text-white">
+              Trade<span className="text-emerald-400">Booking</span>
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            © {new Date().getFullYear()} TradeBooking · tradebooking.co.uk
           </p>
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link href="/register">
-              <Button size="lg" className="gap-2 px-8">
-                Get started free
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" size="lg">Sign in</Button>
-            </Link>
+          <div className="flex gap-5 text-xs text-slate-500">
+            <span className="cursor-pointer hover:text-slate-300 transition-colors">Privacy</span>
+            <span className="cursor-pointer hover:text-slate-300 transition-colors">Terms</span>
+            <Link href="/login" className="hover:text-slate-300 transition-colors">Sign in</Link>
           </div>
         </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t py-8 text-center text-sm text-slate-400">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Zap className="h-4 w-4 text-blue-600" />
-          <span className="font-semibold text-slate-700">TradeBooking</span>
-        </div>
-        <p>© {new Date().getFullYear()} TradeBooking · tradebooking.co.uk</p>
       </footer>
     </div>
   );
