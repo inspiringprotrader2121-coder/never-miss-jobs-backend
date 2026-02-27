@@ -11,6 +11,7 @@ import { bookingRouter } from './modules/booking/booking.routes';
 import { smsRouter } from './modules/sms/sms.routes';
 import { crmRouter } from './modules/crm/crm.routes';
 import { businessRouter } from './modules/business/business.routes';
+import { voiceRouter } from './modules/voice/voice.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { apiLimiter, authLimiter, publicChatLimiter } from './middleware/rateLimiter';
@@ -56,6 +57,7 @@ app.use('/bookings', bookingRouter);
 app.use('/sms', smsRouter);
 app.use('/crm/leads', crmRouter);
 app.use('/business', businessRouter);
+app.use('/voice', voiceRouter);
 
 app.use(errorHandler);
 

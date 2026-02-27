@@ -21,5 +21,8 @@ router.post('/chat', authenticate, aiController.chatDashboard);
 // Public chat endpoint for website widget - business identified by path param
 router.post('/public/chat/:businessId', aiController.chatPublic);
 
+// Public endpoint to fetch widget config (welcome message, business name)
+router.get('/public/config/:businessId', aiController.getPublicConfig);
+
 export const aiRouter = router;
 
