@@ -43,7 +43,7 @@ export function NotificationBell() {
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['notifications'],
-    queryFn: () => api.get('/business/notifications').then((r) => r.data),
+    queryFn: () => api.get('/business/notifications').then(({ data }) => data),
     refetchInterval: 30_000
   });
 
@@ -129,3 +129,4 @@ export function NotificationBell() {
     </div>
   );
 }
+

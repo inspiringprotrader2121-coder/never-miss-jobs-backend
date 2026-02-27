@@ -62,7 +62,7 @@ export default function LeadsPage() {
     queryFn: () =>
       api
         .get('/crm/leads', { params: { page, limit: 20, search: search || undefined } })
-        .then((r) => r.data)
+        .then(({ data }) => data)
   });
 
   const updateStatus = useMutation({
@@ -280,4 +280,5 @@ export default function LeadsPage() {
     </div>
   );
 }
+
 

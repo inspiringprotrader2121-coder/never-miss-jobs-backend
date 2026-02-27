@@ -91,13 +91,13 @@ const STATUS_BADGE: Record<string, string> = {
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
-    queryFn: () => api.get('/business/stats').then((r) => r.data),
+    queryFn: () => api.get('/business/stats').then(({ data }) => data),
     refetchInterval: 60_000
   });
 
   const { data: business } = useQuery<Business>({
     queryKey: ['business'],
-    queryFn: () => api.get('/business').then((r) => r.data)
+    queryFn: () => api.get('/business').then(({ data }) => data)
   });
 
   const apiUrl = process.env['NEXT_PUBLIC_API_URL'] ?? '';
@@ -282,3 +282,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
@@ -228,11 +228,11 @@ function CalendarTab() {
 
   const { data: status, isLoading } = useQuery<CalendarStatus>({
     queryKey: ['calendar-status'],
-    queryFn: () => api.get('/business/calendar/status').then((r) => r.data)
+    queryFn: () => api.get('/business/calendar/status').then(({ data }) => data)
   });
 
   const connect = useMutation({
-    mutationFn: () => api.get('/business/calendar/connect').then((r) => r.data),
+    mutationFn: () => api.get('/business/calendar/connect').then(({ data }) => data),
     onSuccess: (data: { url: string }) => {
       window.location.href = data.url;
     },
@@ -312,24 +312,26 @@ function CalendarTab() {
 function BillingTab() {
   const { data: statsData } = useQuery<{ subscription: Subscription | null }>({
     queryKey: ['dashboard-stats'],
-    queryFn: () => api.get('/business/stats').then((r) => r.data)
+    queryFn: () => api.get('/business/stats').then(({ data }) => data)
   });
 
   const sub = statsData?.subscription;
 
   const portal = useMutation({
-    mutationFn: () => api.post('/billing/portal-session', { returnUrl: window.location.href }),
-    onSuccess: (res) => { window.location.href = res.data.url; },
+    mutationFn: () =>
+      api.post<{ url: string }>('/billing/portal-session', { returnUrl: window.location.href })
+        .then(({ data }) => data),
+    onSuccess: (data) => { window.location.href = data.url; },
     onError: () => toast.error('Could not open billing portal')
   });
 
   const checkout = useMutation({
     mutationFn: () =>
-      api.post('/billing/checkout-session', {
+      api.post<{ url: string }>('/billing/checkout-session', {
         successUrl: `${window.location.origin}/dashboard/settings?tab=billing&upgraded=1`,
         cancelUrl: window.location.href
-      }),
-    onSuccess: (res) => { window.location.href = res.data.url; },
+      }).then(({ data }) => data),
+    onSuccess: (data) => { window.location.href = data.url; },
     onError: () => toast.error('Could not start checkout')
   });
 
@@ -435,12 +437,12 @@ function SettingsContent() {
 
   const { data: business, isLoading: bizLoading } = useQuery<Business>({
     queryKey: ['business'],
-    queryFn: () => api.get('/business').then((r) => r.data)
+    queryFn: () => api.get('/business').then(({ data }) => data)
   });
 
   const { data: aiSettings, isLoading: aiLoading } = useQuery<AiSettings>({
     queryKey: ['ai-settings'],
-    queryFn: () => api.get('/business/ai-settings').then((r) => r.data)
+    queryFn: () => api.get('/business/ai-settings').then(({ data }) => data)
   });
 
   // Show success toast if redirected back after Google Calendar connect
@@ -500,3 +502,4 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
+

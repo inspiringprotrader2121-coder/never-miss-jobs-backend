@@ -53,7 +53,7 @@ export default function BookingsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['bookings'],
-    queryFn: () => api.get('/bookings?limit=50').then((r) => r.data)
+    queryFn: () => api.get('/bookings?limit=50').then(({ data }) => data)
   });
 
   const createBooking = useMutation({
@@ -213,3 +213,4 @@ export default function BookingsPage() {
     </div>
   );
 }
+
