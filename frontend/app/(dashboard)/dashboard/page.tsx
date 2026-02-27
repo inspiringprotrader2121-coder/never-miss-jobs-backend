@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 
 interface DashboardStats {
   leads: { total: number; today: number; last7Days: number };
@@ -181,6 +182,18 @@ export default function DashboardPage() {
           accent="bg-orange-100"
         />
       </div>
+
+      {/* Analytics chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Activity — last 30 days
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AnalyticsChart />
+        </CardContent>
+      </Card>
 
       {/* Bottom row */}
       <div className="grid gap-4 md:grid-cols-3">

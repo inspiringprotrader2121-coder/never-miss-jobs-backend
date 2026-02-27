@@ -16,6 +16,7 @@ router.use(authenticate);
 // Any authenticated user can view business info
 router.get('/', businessController.getBusiness);
 router.get('/stats', businessController.getDashboardStats);
+router.get('/analytics', businessController.getAnalytics);
 router.get('/notifications', getNotifications);
 router.get('/ai-settings', businessController.getAiSettings);
 

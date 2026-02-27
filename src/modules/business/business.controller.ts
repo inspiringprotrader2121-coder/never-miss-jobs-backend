@@ -118,6 +118,62 @@ export async function getDashboardStats(
   }
 }
 
+export async function getAnalytics(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.user) { res.status(401).json({ message: 'Unauthenticated' }); return; }
+    const { businessId } = req.user;
+
+    const now = new Date();
+    const days = 30;
+    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Fetch raw rows with just the createdAt date
+    const [leads, appointments, conversations] = await Promise.all([
+      prisma.lead.findMany({
+        where: { businessId, createdAt: { gte: since } },
+        select: { createdAt: true }
+      }),
+      prisma.appointment.findMany({
+        where: { businessId, createdAt: { gte: since } },
+        select: { createdAt: true }
+      }),
+      prisma.conversation.findMany({
+        where: { businessId, type: 'CHAT', createdAt: { gte: since } },
+        select: { createdAt: true }
+      })
+    ]);
+
+    // Build a day-keyed map for the last `days` days
+    const dayMap: Record<string, { date: string; leads: number; appointments: number; chats: number }> = {};
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 10);
+      dayMap[key] = { date: key, leads: 0, appointments: 0, chats: 0 };
+    }
+
+    for (const l of leads) {
+      const k = l.createdAt.toISOString().slice(0, 10);
+      if (dayMap[k]) dayMap[k].leads++;
+    }
+    for (const a of appointments) {
+      const k = a.createdAt.toISOString().slice(0, 10);
+      if (dayMap[k]) dayMap[k].appointments++;
+    }
+    for (const c of conversations) {
+      const k = c.createdAt.toISOString().slice(0, 10);
+      if (dayMap[k]) dayMap[k].chats++;
+    }
+
+    res.json({ days: Object.values(dayMap) });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateAiSettings(
   req: Request,
   res: Response,

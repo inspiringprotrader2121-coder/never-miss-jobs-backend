@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Search, UserCheck, UserX, Archive, CalendarPlus, X } from 'lucide-react';
+import { Search, UserCheck, UserX, Archive, CalendarPlus, X, Eye } from 'lucide-react';
 import api from '@/lib/api';
+import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -236,6 +237,11 @@ export default function LeadsPage() {
                             <Button variant="ghost" size="sm">•••</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/leads/${lead.id}`}>
+                                <Eye className="mr-2 h-4 w-4" /> View profile
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setBookingLead({ id: lead.id, fullName: lead.fullName })}
                             >
