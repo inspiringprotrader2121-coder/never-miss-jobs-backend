@@ -144,10 +144,6 @@ export async function handleTranscription(
       where: { id: businessId }
     });
 
-    const ownerUser = await prisma.user.findFirst({
-      where: { businessId, role: 'OWNER' }
-    });
-
     if (business?.phoneNumber) {
       const alertBody =
         `TradeBooking: Missed call from ${conversation.fromNumber}. ` +
@@ -155,7 +151,7 @@ export async function handleTranscription(
 
       await sendSms({
         businessId,
-        toPhone: ownerUser?.email ? business.phoneNumber : business.phoneNumber,
+        toPhone: business.phoneNumber,
         body: alertBody
       }).catch(() => {
         // Non-fatal: don't crash if SMS alert fails

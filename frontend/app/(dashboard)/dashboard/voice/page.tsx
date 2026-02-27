@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
@@ -160,9 +160,8 @@ export default function VoicePage() {
                       (m) => m.senderLabel === 'caller'
                     );
                     return (
-                      <>
+                      <Fragment key={call.id}>
                         <TableRow
-                          key={call.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
                             setExpanded(expanded === call.id ? null : call.id)
@@ -206,7 +205,7 @@ export default function VoicePage() {
                           </TableCell>
                         </TableRow>
                         {expanded === call.id && (
-                          <TableRow key={`${call.id}-expanded`}>
+                          <TableRow>
                             <TableCell colSpan={6} className="bg-muted/30 p-4">
                               <div className="space-y-2">
                                 {call.messages.length === 0 ? (
@@ -230,7 +229,7 @@ export default function VoicePage() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </TableBody>

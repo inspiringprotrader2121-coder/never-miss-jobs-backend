@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -78,17 +78,21 @@ export default function LeadDetailPage() {
 
   const { data: lead, isLoading } = useQuery<Lead>({
     queryKey: ['lead', id],
-    queryFn: () => api.get(`/crm/leads/${id}`).then(({ data }) => data),
-    onSuccess: (data: Lead) => {
+    queryFn: () => api.get(`/crm/leads/${id}`).then(({ data }) => data)
+  });
+
+  // Pre-fill edit form whenever lead data loads (useQuery v5 removed onSuccess)
+  useEffect(() => {
+    if (lead) {
       setEditForm({
-        fullName: data.fullName ?? '',
-        email: data.email ?? '',
-        phone: data.phone ?? '',
-        notes: data.notes ?? '',
-        status: data.status
+        fullName: lead.fullName ?? '',
+        email: lead.email ?? '',
+        phone: lead.phone ?? '',
+        notes: lead.notes ?? '',
+        status: lead.status
       });
     }
-  });
+  }, [lead]);
 
   const updateLead = useMutation({
     mutationFn: () => api.patch(`/crm/leads/${id}`, editForm),
