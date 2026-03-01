@@ -1,17 +1,14 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth';
+import { twilioWebhookLimiter } from '../../middleware/rateLimiter';
 import * as voiceController from './voice.controller';
 
 const router = Router();
 
-// Public Twilio webhooks — identified by businessId in the URL
-// Configure these URLs in your Twilio phone number settings:
-//   Incoming call: POST /voice/incoming/:businessId
-//   Recording:     POST /voice/recording/:businessId
-//   Transcription: POST /voice/transcription/:businessId
-router.post('/incoming/:businessId', voiceController.incomingCall);
-router.post('/recording/:businessId', voiceController.recordingCallback);
-router.post('/transcription/:businessId', voiceController.transcriptionCallback);
+// Public Twilio webhooks — rate-limited individually so dashboard routes are unaffected
+router.post('/incoming/:businessId', twilioWebhookLimiter, voiceController.incomingCall);
+router.post('/recording/:businessId', twilioWebhookLimiter, voiceController.recordingCallback);
+router.post('/transcription/:businessId', twilioWebhookLimiter, voiceController.transcriptionCallback);
 
 // Protected dashboard routes
 router.get('/logs', authenticate, voiceController.listVoiceLogs);

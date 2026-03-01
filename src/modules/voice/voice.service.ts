@@ -67,11 +67,25 @@ export async function handleIncomingCall(
     `);
   }
 
-  // During working hours — play a hold message while staff answer
+  // During working hours — forward to the business owner's phone number
+  if (!business.phoneNumber) {
+    // No forwarding number configured — go straight to voicemail
+    return buildTwiml(`
+      <Say voice="alice">Thanks for calling ${escapeXml(business.name)}. Please leave a message after the tone.</Say>
+      <Record
+        maxLength="120"
+        transcribe="true"
+        transcribeCallback="/voice/transcription/${businessId}"
+        action="/voice/recording/${businessId}"
+        playBeep="true"
+      />
+    `);
+  }
+
   return buildTwiml(`
     <Say voice="alice">Thanks for calling ${escapeXml(business.name)}. Connecting you now.</Say>
     <Dial timeout="30">
-      <Number>${escapeXml(params.To)}</Number>
+      <Number>${escapeXml(business.phoneNumber)}</Number>
     </Dial>
     <Say voice="alice">Sorry, we could not connect your call. Please leave a message after the tone.</Say>
     <Record
@@ -173,19 +187,25 @@ export async function handleRecordingCallback(
 
   if (!conversation) return;
 
-  await prisma.message.upsert({
-    where: { id: `recording-${params.CallSid}` },
-    create: {
-      id: `recording-${params.CallSid}`,
-      businessId,
-      conversationId: conversation.id,
-      senderLabel: 'system',
-      content: `Recording: ${params.RecordingUrl} (${params.RecordingDuration}s)`
-    },
-    update: {
-      content: `Recording: ${params.RecordingUrl} (${params.RecordingDuration}s)`
-    }
+  const existingRecording = await prisma.message.findFirst({
+    where: { conversationId: conversation.id, senderLabel: 'system' }
   });
+
+  if (existingRecording) {
+    await prisma.message.update({
+      where: { id: existingRecording.id },
+      data: { content: `Recording: ${params.RecordingUrl} (${params.RecordingDuration}s)` }
+    });
+  } else {
+    await prisma.message.create({
+      data: {
+        businessId,
+        conversationId: conversation.id,
+        senderLabel: 'system',
+        content: `Recording: ${params.RecordingUrl} (${params.RecordingDuration}s)`
+      }
+    });
+  }
 }
 
 export async function listVoiceConversations(

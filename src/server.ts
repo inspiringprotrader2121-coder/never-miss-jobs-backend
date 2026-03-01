@@ -18,7 +18,7 @@ import { voiceRouter } from './modules/voice/voice.routes';
 import { startAppointmentReminderJob } from './jobs/appointmentReminders';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
-import { apiLimiter, authLimiter, twilioWebhookLimiter } from './middleware/rateLimiter';
+import { apiLimiter, authLimiter } from './middleware/rateLimiter';
 
 const app = express();
 
@@ -38,14 +38,16 @@ app.use(
 
 app.use(compression());
 app.use(requestLogger);
-app.use(apiLimiter);
 
-// Stripe webhook must receive raw body - mount before express.json()
+// Stripe webhook must receive raw body AND must be before apiLimiter
+// to avoid Stripe retries being rate-limited
 app.post(
   '/billing/webhook',
   express.raw({ type: 'application/json' }),
   handleStripeWebhook
 );
+
+app.use(apiLimiter);
 
 app.use(express.json());
 
@@ -59,8 +61,8 @@ app.use('/billing', billingRouter);
 app.use('/bookings', bookingRouter);
 app.use('/crm/leads', crmRouter);
 app.use('/business', businessRouter);
-app.use('/voice', twilioWebhookLimiter, voiceRouter);
-app.use('/sms', twilioWebhookLimiter, smsRouter);
+app.use('/voice', voiceRouter);
+app.use('/sms', smsRouter);
 
 app.use(errorHandler);
 

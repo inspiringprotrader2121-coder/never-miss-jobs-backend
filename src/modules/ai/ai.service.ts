@@ -78,7 +78,7 @@ export async function handleChat(
           businessId: tenant.businessId,
           conversationId: conversation.id,
           senderLabel: 'visitor',
-          content: (chatInputSchema.parse(rawInput)).message
+          content: input.message
         }
       });
 
@@ -171,7 +171,7 @@ export async function handleChat(
   }));
 
   const completion = await openai.chat.completions.create({
-    model: aiSettings?.modelName ?? 'gpt-4.1-mini',
+    model: aiSettings?.modelName ?? 'gpt-4o-mini',
     messages: [
       {
         role: 'system',

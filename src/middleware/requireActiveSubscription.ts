@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { SubscriptionStatus } from '@prisma/client';
 import { prisma } from '../config/prisma';
 
 /**
@@ -31,7 +32,7 @@ export async function requireActiveSubscription(
     return;
   }
 
-  if (subscription.status === 'CANCELED') {
+  if (subscription.status === SubscriptionStatus.CANCELED) {
     res.status(402).json({
       message: 'Your subscription has been cancelled. Please resubscribe to continue.',
       code: 'SUBSCRIPTION_CANCELED'
@@ -39,7 +40,7 @@ export async function requireActiveSubscription(
     return;
   }
 
-  if (subscription.status === 'PAST_DUE') {
+  if (subscription.status === SubscriptionStatus.PAST_DUE) {
     res.status(402).json({
       message: 'Your payment is overdue. Please update your billing details.',
       code: 'SUBSCRIPTION_PAST_DUE'
@@ -49,14 +50,14 @@ export async function requireActiveSubscription(
 
   // Check trial expiry
   if (
-    subscription.status === 'TRIALING' &&
+    subscription.status === SubscriptionStatus.TRIALING &&
     subscription.trialEndsAt &&
     subscription.trialEndsAt < new Date()
   ) {
     // Auto-update to CANCELED so future checks are faster
     await prisma.subscription.update({
       where: { id: subscription.id },
-      data: { status: 'CANCELED' }
+      data: { status: SubscriptionStatus.CANCELED }
     }).catch(() => {});
 
     res.status(402).json({

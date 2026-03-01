@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Send, Bot, User } from 'lucide-react';
-import { api } from '@/lib/api';
-import { Header } from '@/components/layout/Header';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -67,7 +66,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="AI Chat" />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-4">

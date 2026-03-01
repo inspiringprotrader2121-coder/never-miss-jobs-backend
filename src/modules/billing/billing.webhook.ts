@@ -18,7 +18,7 @@ function stripeStatusToPrisma(status: Stripe.Subscription.Status): SubscriptionS
     case 'trialing':
       return SubscriptionStatus.TRIALING;
     default:
-      return SubscriptionStatus.TRIALING;
+      return SubscriptionStatus.CANCELED;
   }
 }
 

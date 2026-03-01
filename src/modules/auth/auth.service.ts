@@ -59,7 +59,8 @@ export async function register(input: unknown) {
       data: {
         businessId: business.id,
         status: SubscriptionStatus.TRIALING,
-        planCode: 'trial'
+        planCode: 'trial',
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
       }
     });
 

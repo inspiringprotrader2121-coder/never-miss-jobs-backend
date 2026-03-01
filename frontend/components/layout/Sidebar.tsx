@@ -11,7 +11,8 @@ import {
   LogOut,
   Zap,
   Phone,
-  UserCog
+  UserCog,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -23,7 +24,7 @@ const navItems = [
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/bookings', label: 'Bookings', icon: CalendarDays },
   { href: '/dashboard/chat', label: 'AI Chat', icon: MessageSquare },
-  { href: '/dashboard/sms', label: 'SMS Logs', icon: MessageSquare },
+  { href: '/dashboard/sms', label: 'SMS Logs', icon: Smartphone },
   { href: '/dashboard/voice', label: 'Voice & Calls', icon: Phone },
   { href: '/dashboard/team', label: 'Team', icon: UserCog },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings }

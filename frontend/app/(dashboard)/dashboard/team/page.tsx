@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { getUser } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +44,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function TeamPage() {
   const queryClient = useQueryClient();
-  const currentUser = getUser();
+  const { user: currentUser } = useAuth();
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -56,7 +56,7 @@ export default function TeamPage() {
     queryKey: ['team'],
     queryFn: async () => {
       const res = await api.get('/business/users');
-      return res.data;
+      return res.data.users;
     }
   });
 
@@ -67,7 +67,7 @@ export default function TeamPage() {
       password: string;
       role: 'ADMIN' | 'STAFF';
     }) => {
-      const res = await api.post('/business/users/invite', data);
+      const res = await api.post('/business/users', data);
       return res.data;
     },
     onSuccess: () => {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Search, UserCheck, UserX, Archive, CalendarPlus, X, Eye } from 'lucide-react';
+import { Search, UserCheck, UserX, Archive, CalendarPlus, X, Eye, BadgeCheck } from 'lucide-react';
 import api from '@/lib/api';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
@@ -255,7 +255,7 @@ export default function LeadsPage() {
                             <DropdownMenuItem
                               onClick={() => updateStatus.mutate({ id: lead.id, status: 'CUSTOMER' })}
                             >
-                              <UserX className="mr-2 h-4 w-4" /> Mark Customer
+                              <BadgeCheck className="mr-2 h-4 w-4" /> Mark Customer
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600"

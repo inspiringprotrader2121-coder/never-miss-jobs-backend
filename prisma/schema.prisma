@@ -99,7 +99,7 @@ model Subscription {
   planCode             String
   trialEndsAt          DateTime?
   currentPeriodEnd     DateTime?
-  stripeSubscriptionId String?
+  stripeSubscriptionId String?            @unique
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -146,6 +146,7 @@ model Conversation {
 
   @@index([businessId])
   @@index([businessId, type])
+  @@index([twilioCallSid])
 }
 
 model Message {
@@ -206,7 +207,7 @@ model AiSettings {
   afterHoursMessage   String?
   timezone            String?   @default("Europe/London")
   workingHoursJson    String?
-  modelName           String?   @default("gpt-4.1-mini")
+  modelName           String?   @default("gpt-4o-mini")
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 }

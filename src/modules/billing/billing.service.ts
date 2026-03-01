@@ -95,13 +95,9 @@ export async function createCheckoutSession(
     }
   });
 
-  await prisma.subscription.create({
-    data: {
-      businessId: business.id,
-      status: SubscriptionStatus.TRIALING,
-      planCode: 'standard'
-    }
-  });
+  if (!session.url) {
+    throw new AppError('Failed to create Stripe checkout session URL', 500);
+  }
 
   return {
     url: session.url
