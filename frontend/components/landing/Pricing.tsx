@@ -126,7 +126,7 @@ export function Pricing() {
               </ul>
 
               <a
-                href="#contact"
+                href="/demo"
                 className={`inline-flex items-center justify-center gap-2 rounded px-5 py-2.5 text-sm font-semibold transition-colors ${
                   plan.highlight
                     ? 'bg-blue-700 hover:bg-blue-600 text-white shadow-sm'

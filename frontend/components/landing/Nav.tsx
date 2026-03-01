@@ -65,7 +65,7 @@ export function Nav() {
               Sign in
             </Link>
             <a
-              href="#contact"
+              href="/demo"
               className="inline-flex items-center rounded bg-blue-700 hover:bg-blue-800 px-4 py-2 text-sm font-medium text-white transition-colors shadow-sm"
             >
               Book a Demo
@@ -101,7 +101,7 @@ export function Nav() {
               Sign in
             </Link>
             <a
-              href="#contact"
+              href="/demo"
               className="inline-flex justify-center rounded bg-blue-700 px-4 py-2.5 text-sm font-medium text-white"
               onClick={() => setOpen(false)}
             >

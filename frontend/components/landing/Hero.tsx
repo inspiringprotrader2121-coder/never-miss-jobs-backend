@@ -59,7 +59,7 @@ export function Hero() {
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
-              href="#contact"
+              href="/demo"
               className="inline-flex items-center gap-2 rounded bg-blue-700 hover:bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors shadow-lg shadow-blue-900/30"
             >
               Book a Demo

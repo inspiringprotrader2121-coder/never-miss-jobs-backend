@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 export function FinalCTA() {
@@ -22,7 +23,7 @@ export function FinalCTA() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="mailto:hello@tradebooking.co.uk"
+              href="/demo"
               className="inline-flex items-center gap-2 rounded bg-blue-700 hover:bg-blue-600 px-8 py-3.5 text-base font-semibold text-white transition-colors shadow-lg shadow-blue-900/40"
             >
               Book Your Demo
@@ -60,7 +61,7 @@ export function FinalCTA() {
               <a href="#features" className="hover:text-slate-300 transition-colors">Features</a>
               <a href="#pricing" className="hover:text-slate-300 transition-colors">Pricing</a>
               <a href="/login" className="hover:text-slate-300 transition-colors">Client Login</a>
-              <a href="mailto:hello@tradebooking.co.uk" className="hover:text-slate-300 transition-colors">Contact</a>
+              <Link href="/demo" className="hover:text-slate-300 transition-colors">Book a Demo</Link>
             </div>
 
             {/* Legal */}
@@ -71,10 +72,10 @@ export function FinalCTA() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-4 text-xs text-slate-700">
-            <span className="cursor-pointer hover:text-slate-500 transition-colors">Privacy Policy</span>
-            <span className="cursor-pointer hover:text-slate-500 transition-colors">Terms of Service</span>
-            <span className="cursor-pointer hover:text-slate-500 transition-colors">Cookie Policy</span>
-            <span className="cursor-pointer hover:text-slate-500 transition-colors">GDPR</span>
+            <Link href="/privacy" className="hover:text-slate-500 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-500 transition-colors">Terms of Service</Link>
+            <Link href="/cookies" className="hover:text-slate-500 transition-colors">Cookie Policy</Link>
+            <Link href="/privacy#gdpr" className="hover:text-slate-500 transition-colors">GDPR</Link>
           </div>
         </div>
       </div>
