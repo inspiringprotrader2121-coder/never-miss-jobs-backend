@@ -20,7 +20,8 @@ import {
   CalendarDays,
   Edit2,
   Check,
-  X
+  X,
+  Send
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -68,13 +69,10 @@ export default function LeadDetailPage() {
   const queryClient = useQueryClient();
 
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    notes: '',
-    status: ''
-  });
+  const [editForm, setEditForm] = useState({ fullName: '', email: '', phone: '', notes: '', status: '' });
+  const [showSms, setShowSms] = useState(false);
+  const [smsBody, setSmsBody] = useState('');
+  const [sendingSms, setSendingSms] = useState(false);
 
   const { data: lead, isLoading } = useQuery<Lead>({
     queryKey: ['lead', id],
@@ -113,6 +111,23 @@ export default function LeadDetailPage() {
     },
     onError: () => toast.error('Failed to archive lead')
   });
+
+  async function handleSendSms(e: React.FormEvent) {
+    e.preventDefault();
+    if (!lead?.phone || !smsBody.trim()) return;
+    setSendingSms(true);
+    try {
+      await api.post('/sms/send', { toPhone: lead.phone, body: smsBody });
+      toast.success('SMS sent');
+      setSmsBody('');
+      setShowSms(false);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to send SMS';
+      toast.error(msg);
+    } finally {
+      setSendingSms(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -155,6 +170,12 @@ export default function LeadDetailPage() {
           {lead.status}
         </span>
         <div className="ml-auto flex gap-2">
+          {lead.phone && (
+            <Button variant="outline" size="sm" onClick={() => setShowSms((v) => !v)}>
+              <Send className="mr-1.5 h-4 w-4" />
+              Send SMS
+            </Button>
+          )}
           {!editing ? (
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
               <Edit2 className="mr-1.5 h-3.5 w-3.5" />
@@ -184,6 +205,47 @@ export default function LeadDetailPage() {
           )}
         </div>
       </div>
+
+      {/* SMS compose panel */}
+      {showSms && lead.phone && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Send className="h-4 w-4 text-blue-600" />
+                Send SMS to {lead.phone}
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowSms(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSendSms} className="space-y-3">
+              <textarea
+                rows={3}
+                value={smsBody}
+                onChange={(e) => setSmsBody(e.target.value)}
+                placeholder="Type your message here…"
+                maxLength={1600}
+                required
+                className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{smsBody.length}/1600</span>
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm" disabled={sendingSms || !smsBody.trim()}>
+                    {sendingSms ? 'Sending…' : 'Send SMS'}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowSms(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Contact card */}
       <Card>

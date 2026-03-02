@@ -12,5 +12,6 @@ router.post('/inbound/:businessId', twilioWebhookLimiter, handleInboundSms);
 // Protected dashboard routes
 router.use(authenticate);
 router.get('/logs', smsController.getSmsLogs);
+router.post('/send', smsController.sendAdHocSms);
 
 export const smsRouter = router;

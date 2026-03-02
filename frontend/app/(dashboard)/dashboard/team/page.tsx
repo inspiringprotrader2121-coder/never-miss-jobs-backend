@@ -48,7 +48,6 @@ export default function TeamPage() {
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
-  const [invitePassword, setInvitePassword] = useState('');
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'STAFF'>('STAFF');
   const [showForm, setShowForm] = useState(false);
 
@@ -61,26 +60,20 @@ export default function TeamPage() {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: async (data: {
-      email: string;
-      fullName: string;
-      password: string;
-      role: 'ADMIN' | 'STAFF';
-    }) => {
+    mutationFn: async (data: { email: string; fullName: string; role: 'ADMIN' | 'STAFF' }) => {
       const res = await api.post('/business/users', data);
       return res.data;
     },
     onSuccess: () => {
-      toast.success('Team member invited successfully');
+      toast.success('Invitation email sent');
       queryClient.invalidateQueries({ queryKey: ['team'] });
       setInviteEmail('');
       setInviteName('');
-      setInvitePassword('');
       setInviteRole('STAFF');
       setShowForm(false);
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
-      toast.error(err.response?.data?.message ?? 'Failed to invite team member');
+      toast.error(err.response?.data?.message ?? 'Failed to send invitation');
     }
   });
 
@@ -110,13 +103,8 @@ export default function TeamPage() {
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail || !inviteName || !invitePassword) return;
-    inviteMutation.mutate({
-      email: inviteEmail,
-      fullName: inviteName,
-      password: invitePassword,
-      role: inviteRole
-    });
+    if (!inviteEmail || !inviteName) return;
+    inviteMutation.mutate({ email: inviteEmail, fullName: inviteName, role: inviteRole });
   };
 
   return (
@@ -140,6 +128,7 @@ export default function TeamPage() {
         <Card>
           <CardHeader>
             <CardTitle>Invite Team Member</CardTitle>
+            <p className="text-sm text-muted-foreground">An invitation email will be sent. They will set their own password when they accept.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleInvite} className="space-y-4">
@@ -166,17 +155,6 @@ export default function TeamPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="invite-password">Temporary Password</Label>
-                  <Input
-                    id="invite-password"
-                    type="password"
-                    placeholder="They can change this later"
-                    value={invitePassword}
-                    onChange={(e) => setInvitePassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="invite-role">Role</Label>
                   <Select
                     value={inviteRole}
@@ -194,7 +172,7 @@ export default function TeamPage() {
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={inviteMutation.isPending}>
-                  {inviteMutation.isPending ? 'Inviting…' : 'Send Invite'}
+                  {inviteMutation.isPending ? 'Sending…' : 'Send invitation email'}
                 </Button>
                 <Button
                   type="button"

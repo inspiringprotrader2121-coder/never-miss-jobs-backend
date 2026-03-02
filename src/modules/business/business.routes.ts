@@ -11,6 +11,9 @@ const router = Router();
 // Google Calendar OAuth callback is public (Google redirects here without a JWT)
 router.get('/calendar/callback', calendarController.oauthCallback);
 
+// Public invite acceptance — no auth required
+router.post('/users/accept-invite', usersController.acceptInvite);
+
 router.use(authenticate);
 
 // Any authenticated user can view business info

@@ -4,6 +4,9 @@ import { prisma } from '../../config/prisma';
 import { getOpenAIClient } from '../../config/openai';
 import { AppError } from '../../middleware/errorHandler';
 import { isWithinWorkingHours } from '../business/business.service';
+import { sendEmail } from '../../config/mailer';
+import { newLeadEmailHtml } from '../../config/emailTemplates';
+import { env } from '../../config/env';
 
 const chatInputSchema = z.object({
   conversationId: z.string().cuid().optional(),
@@ -247,6 +250,26 @@ export async function handleChat(
             notes: update.description ?? null
           }
         });
+
+        // Email notification to business owner (non-fatal)
+        const owner = await prisma.user.findFirst({
+          where: { businessId: tenant.businessId, role: 'OWNER' }
+        });
+        if (owner?.email) {
+          const dashboardUrl = env.FRONTEND_URL ?? 'https://tradebooking.co.uk/dashboard';
+          sendEmail({
+            to: owner.email,
+            subject: `New lead: ${lead.fullName ?? lead.phone ?? 'Unknown'} — ${business.name}`,
+            html: newLeadEmailHtml({
+              businessName: business.name,
+              leadName: lead.fullName,
+              leadPhone: lead.phone,
+              leadEmail: lead.email,
+              source: lead.source,
+              dashboardUrl
+            })
+          }).catch(() => {});
+        }
       } else {
         lead = await prisma.lead.update({
           where: { id: lead.id },

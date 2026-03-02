@@ -4,6 +4,8 @@ import { SubscriptionStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { getStripeClient } from '../../config/stripe';
 import { env } from '../../config/env';
+import { sendEmail } from '../../config/mailer';
+import { paymentFailedEmailHtml } from '../../config/emailTemplates';
 
 function stripeStatusToPrisma(status: Stripe.Subscription.Status): SubscriptionStatus {
   switch (status) {
@@ -137,6 +139,23 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           where: { businessId: business.id },
           data: { status: SubscriptionStatus.PAST_DUE }
         });
+
+        // Email the business owner
+        const owner = await prisma.user.findFirst({
+          where: { businessId: business.id, role: 'OWNER' }
+        });
+        if (owner?.email) {
+          const billingUrl = `${env.FRONTEND_URL ?? 'https://tradebooking.co.uk'}/dashboard/settings?tab=billing`;
+          sendEmail({
+            to: owner.email,
+            subject: `Action required: Payment failed for ${business.name}`,
+            html: paymentFailedEmailHtml({
+              businessName: business.name,
+              ownerName: owner.fullName ?? 'there',
+              billingUrl
+            })
+          }).catch(() => {});
+        }
 
         break;
       }

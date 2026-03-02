@@ -1,5 +1,8 @@
 import { prisma } from '../../config/prisma';
 import { sendSms } from '../sms/sms.service';
+import { sendEmail } from '../../config/mailer';
+import { missedCallEmailHtml } from '../../config/emailTemplates';
+import { env } from '../../config/env';
 
 interface TwilioCallParams {
   CallSid: string;
@@ -167,9 +170,32 @@ export async function handleTranscription(
         businessId,
         toPhone: business.phoneNumber,
         body: alertBody
-      }).catch(() => {
-        // Non-fatal: don't crash if SMS alert fails
-      });
+      }).catch(() => {});
+    }
+
+    // Email notification to business owner (non-fatal)
+    const owner = await prisma.user.findFirst({
+      where: { businessId, role: 'OWNER' }
+    });
+    if (owner?.email) {
+      const dashboardUrl = env.FRONTEND_URL ?? 'https://tradebooking.co.uk/dashboard';
+      const callTime = new Intl.DateTimeFormat('en-GB', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Europe/London'
+      }).format(new Date());
+
+      sendEmail({
+        to: owner.email,
+        subject: `Missed call from ${conversation.fromNumber} — ${business?.name ?? 'TradeBooking'}`,
+        html: missedCallEmailHtml({
+          businessName: business?.name ?? 'TradeBooking',
+          callerNumber: conversation.fromNumber,
+          transcript: transcriptText !== '[Transcription not available]' ? transcriptText : null,
+          callTime,
+          dashboardUrl
+        })
+      }).catch(() => {});
     }
   }
 }

@@ -12,8 +12,15 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
 export async function inviteUser(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthenticated' }); return; }
-    const user = await usersService.inviteUser(req.user.businessId, req.body);
+    const user = await usersService.inviteUser(req.user.businessId, req.user.userId, req.body);
     res.status(201).json(user);
+  } catch (err) { next(err); }
+}
+
+export async function acceptInvite(req: Request, res: Response, next: NextFunction) {
+  try {
+    const user = await usersService.acceptInvite(req.body);
+    res.status(200).json(user);
   } catch (err) { next(err); }
 }
 
