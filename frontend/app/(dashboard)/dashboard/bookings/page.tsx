@@ -57,9 +57,14 @@ export default function BookingsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showLeadDropdown, setShowLeadDropdown] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState('');
+
   const { data, isLoading } = useQuery({
-    queryKey: ['bookings'],
-    queryFn: () => api.get('/bookings?limit=50').then(({ data }) => data)
+    queryKey: ['bookings', statusFilter],
+    queryFn: () =>
+      api
+        .get('/bookings', { params: { limit: 50, status: statusFilter || undefined } })
+        .then(({ data }) => data)
   });
 
   const { data: leadsData } = useQuery({
@@ -122,17 +127,30 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Bookings</h1>
           <p className="text-sm text-muted-foreground">
             {data?.total ?? 0} appointments total
           </p>
         </div>
-        <Button onClick={() => setShowForm((v) => !v)} size="sm">
-          <CalendarPlus className="mr-2 h-4 w-4" />
-          New appointment
-        </Button>
+        <div className="flex items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">All statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="NO_SHOW">No show</option>
+          </select>
+          <Button onClick={() => setShowForm((v) => !v)} size="sm">
+            <CalendarPlus className="mr-2 h-4 w-4" />
+            New appointment
+          </Button>
+        </div>
       </div>
 
       {showForm && (

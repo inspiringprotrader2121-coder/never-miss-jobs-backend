@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', crmController.listLeads);
+router.post('/', crmController.createLead);
 router.get('/:id', crmController.getLead);
 router.patch('/:id', crmController.updateLead);
 router.delete('/:id', crmController.deleteLead);

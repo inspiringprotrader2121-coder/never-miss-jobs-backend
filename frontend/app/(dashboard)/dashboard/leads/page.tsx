@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Search, UserCheck, UserX, Archive, CalendarPlus, X, Eye, BadgeCheck } from 'lucide-react';
+import { Search, UserCheck, Archive, CalendarPlus, X, Eye, BadgeCheck, UserPlus } from 'lucide-react';
 import api from '@/lib/api';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,8 @@ interface BookingLead {
   fullName: string | null;
 }
 
+const EMPTY_LEAD_FORM = { fullName: '', email: '', phone: '', notes: '' };
+
 export default function LeadsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -57,6 +59,8 @@ export default function LeadsPage() {
   const [bookingLead, setBookingLead] = useState<BookingLead | null>(null);
   const [bookForm, setBookForm] = useState({ startsAt: '', endsAt: '', sendSms: true });
   const [bookLoading, setBookLoading] = useState(false);
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [leadForm, setLeadForm] = useState(EMPTY_LEAD_FORM);
 
   const { data, isLoading } = useQuery({
     queryKey: ['leads', page, search],
@@ -108,6 +112,17 @@ export default function LeadsPage() {
     }
   }
 
+  const createLead = useMutation({
+    mutationFn: () => api.post('/crm/leads', leadForm),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      toast.success('Lead created');
+      setShowAddLead(false);
+      setLeadForm(EMPTY_LEAD_FORM);
+    },
+    onError: () => toast.error('Failed to create lead')
+  });
+
   const leads: Lead[] = data?.leads ?? [];
   const total: number = data?.total ?? 0;
 
@@ -125,7 +140,77 @@ export default function LeadsPage() {
             />
           </div>
           <span className="text-sm text-muted-foreground">{total} leads</span>
+          <Button size="sm" onClick={() => setShowAddLead((v) => !v)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add lead
+          </Button>
         </div>
+
+        {/* Add lead form */}
+        {showAddLead && (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-green-600" />
+                  Add new lead
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowAddLead(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={(e) => { e.preventDefault(); createLead.mutate(); }}
+                className="grid gap-4 sm:grid-cols-2"
+              >
+                <div className="space-y-1.5">
+                  <Label>Full name</Label>
+                  <Input
+                    value={leadForm.fullName}
+                    onChange={(e) => setLeadForm((f) => ({ ...f, fullName: e.target.value }))}
+                    placeholder="James Thornton"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone</Label>
+                  <Input
+                    type="tel"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm((f) => ({ ...f, phone: e.target.value }))}
+                    placeholder="07700 900000"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="james@example.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Notes</Label>
+                  <Input
+                    value={leadForm.notes}
+                    onChange={(e) => setLeadForm((f) => ({ ...f, notes: e.target.value }))}
+                    placeholder="e.g. Boiler replacement, urgent"
+                  />
+                </div>
+                <div className="flex gap-2 sm:col-span-2">
+                  <Button type="submit" disabled={createLead.isPending}>
+                    {createLead.isPending ? 'Creating…' : 'Create lead'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowAddLead(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick-book modal */}
         {bookingLead && (

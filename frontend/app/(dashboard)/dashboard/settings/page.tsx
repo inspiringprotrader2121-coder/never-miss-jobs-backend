@@ -31,11 +31,19 @@ interface Business {
   websiteUrl: string | null;
 }
 
+interface WorkingHours {
+  open: string;
+  close: string;
+  enabled: boolean;
+}
+
 interface AiSettings {
   welcomeMessage: string | null;
   qualificationPrompt: string | null;
   afterHoursMessage: string | null;
   timezone: string | null;
+  modelName: string | null;
+  workingHoursJson: Record<string, WorkingHours> | null;
 }
 
 interface CalendarStatus {
@@ -161,9 +169,34 @@ function PasswordTab() {
   );
 }
 
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+type Day = typeof DAYS[number];
+
+const DEFAULT_HOURS: Record<Day, WorkingHours> = {
+  monday:    { open: '08:00', close: '18:00', enabled: true },
+  tuesday:   { open: '08:00', close: '18:00', enabled: true },
+  wednesday: { open: '08:00', close: '18:00', enabled: true },
+  thursday:  { open: '08:00', close: '18:00', enabled: true },
+  friday:    { open: '08:00', close: '18:00', enabled: true },
+  saturday:  { open: '09:00', close: '13:00', enabled: false },
+  sunday:    { open: '09:00', close: '13:00', enabled: false },
+};
+
+const AI_MODELS = [
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (fast, recommended)' },
+  { value: 'gpt-4o',      label: 'GPT-4o (more capable, higher cost)' },
+];
+
 function AiTab({ aiSettings, loading }: { aiSettings: AiSettings | undefined; loading: boolean }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ welcomeMessage: '', qualificationPrompt: '', afterHoursMessage: '', timezone: 'Europe/London' });
+  const [form, setForm] = useState({
+    welcomeMessage: '',
+    qualificationPrompt: '',
+    afterHoursMessage: '',
+    timezone: 'Europe/London',
+    modelName: 'gpt-4o-mini',
+  });
+  const [hours, setHours] = useState<Record<Day, WorkingHours>>(DEFAULT_HOURS);
 
   useEffect(() => {
     if (aiSettings) {
@@ -171,13 +204,17 @@ function AiTab({ aiSettings, loading }: { aiSettings: AiSettings | undefined; lo
         welcomeMessage: aiSettings.welcomeMessage ?? '',
         qualificationPrompt: aiSettings.qualificationPrompt ?? '',
         afterHoursMessage: aiSettings.afterHoursMessage ?? '',
-        timezone: aiSettings.timezone ?? 'Europe/London'
+        timezone: aiSettings.timezone ?? 'Europe/London',
+        modelName: aiSettings.modelName ?? 'gpt-4o-mini',
       });
+      if (aiSettings.workingHoursJson) {
+        setHours({ ...DEFAULT_HOURS, ...(aiSettings.workingHoursJson as Record<Day, WorkingHours>) });
+      }
     }
   }, [aiSettings]);
 
   const save = useMutation({
-    mutationFn: () => api.patch('/business/ai-settings', form),
+    mutationFn: () => api.patch('/business/ai-settings', { ...form, workingHoursJson: hours }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-settings'] });
       toast.success('AI settings saved');
@@ -185,41 +222,160 @@ function AiTab({ aiSettings, loading }: { aiSettings: AiSettings | undefined; lo
     onError: () => toast.error('Failed to save')
   });
 
+  function setHour(day: Day, field: keyof WorkingHours, value: string | boolean) {
+    setHours((prev) => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
+  }
+
+  const textareaClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none";
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>AI assistant</CardTitle>
-        <CardDescription>Customise how your AI chat widget behaves</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
-        ) : (
-          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-            <div className="space-y-1.5">
-              <Label>Welcome message</Label>
-              <Input value={form.welcomeMessage} onChange={(e) => setForm((f) => ({ ...f, welcomeMessage: e.target.value }))} placeholder="Hi! How can we help with your job today?" />
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>AI assistant</CardTitle>
+          <CardDescription>Customise how your AI chat widget behaves</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          ) : (
+            <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+              <div className="space-y-1.5">
+                <Label>AI model</Label>
+                <select
+                  value={form.modelName}
+                  onChange={(e) => setForm((f) => ({ ...f, modelName: e.target.value }))}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {AI_MODELS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Welcome message</Label>
+                <textarea
+                  rows={2}
+                  className={textareaClass}
+                  value={form.welcomeMessage}
+                  onChange={(e) => setForm((f) => ({ ...f, welcomeMessage: e.target.value }))}
+                  placeholder="Hi! How can we help with your job today?"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Qualification instructions</Label>
+                <textarea
+                  rows={3}
+                  className={textareaClass}
+                  value={form.qualificationPrompt}
+                  onChange={(e) => setForm((f) => ({ ...f, qualificationPrompt: e.target.value }))}
+                  placeholder="Always ask for job type, location, and urgency. Collect the customer's name and phone number before booking."
+                />
+                <p className="text-xs text-muted-foreground">Instructions for how the AI should qualify leads</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>After-hours message</Label>
+                <textarea
+                  rows={2}
+                  className={textareaClass}
+                  value={form.afterHoursMessage}
+                  onChange={(e) => setForm((f) => ({ ...f, afterHoursMessage: e.target.value }))}
+                  placeholder="We're closed right now. Leave your details and we'll call you back first thing tomorrow."
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Timezone</Label>
+                <select
+                  value={form.timezone}
+                  onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="Europe/London">Europe/London (UK)</option>
+                  <option value="Europe/Dublin">Europe/Dublin (Ireland)</option>
+                  <option value="Europe/Paris">Europe/Paris</option>
+                  <option value="Europe/Berlin">Europe/Berlin</option>
+                  <option value="America/New_York">America/New_York</option>
+                  <option value="America/Chicago">America/Chicago</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles</option>
+                  <option value="Australia/Sydney">Australia/Sydney</option>
+                </select>
+                <p className="text-xs text-muted-foreground">Used to determine when after-hours mode activates</p>
+              </div>
+
+              <Button type="submit" disabled={save.isPending}>
+                {save.isPending ? 'Saving…' : 'Save AI settings'}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Working hours */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Working hours</CardTitle>
+          <CardDescription>
+            Outside these hours, the AI switches to after-hours mode and calls go to voicemail
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-2">{[1,2,3,4,5,6,7].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          ) : (
+            <div className="space-y-3">
+              {DAYS.map((day) => (
+                <div key={day} className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 w-32">
+                    <input
+                      type="checkbox"
+                      id={`day-${day}`}
+                      checked={hours[day].enabled}
+                      onChange={(e) => setHour(day, 'enabled', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <label htmlFor={`day-${day}`} className="text-sm font-medium capitalize cursor-pointer">
+                      {day.slice(0, 3).charAt(0).toUpperCase() + day.slice(1, 3)}
+                    </label>
+                  </div>
+                  {hours[day].enabled ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        type="time"
+                        value={hours[day].open}
+                        onChange={(e) => setHour(day, 'open', e.target.value)}
+                        className="w-32"
+                      />
+                      <span className="text-sm text-muted-foreground">to</span>
+                      <Input
+                        type="time"
+                        value={hours[day].close}
+                        onChange={(e) => setHour(day, 'close', e.target.value)}
+                        className="w-32"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Closed</span>
+                  )}
+                </div>
+              ))}
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  onClick={() => save.mutate()}
+                  disabled={save.isPending}
+                >
+                  {save.isPending ? 'Saving…' : 'Save working hours'}
+                </Button>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Qualification instructions</Label>
-              <Input value={form.qualificationPrompt} onChange={(e) => setForm((f) => ({ ...f, qualificationPrompt: e.target.value }))} placeholder="Always ask for job type, location, and urgency" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>After-hours message</Label>
-              <Input value={form.afterHoursMessage} onChange={(e) => setForm((f) => ({ ...f, afterHoursMessage: e.target.value }))} placeholder="We're closed right now. We'll call you back tomorrow." />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Timezone</Label>
-              <Input value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} placeholder="Europe/London" />
-              <p className="text-xs text-muted-foreground">Used for after-hours detection. E.g. Europe/London, Europe/Paris</p>
-            </div>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save AI settings'}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

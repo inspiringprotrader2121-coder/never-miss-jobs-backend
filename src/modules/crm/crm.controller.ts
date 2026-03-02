@@ -1,6 +1,20 @@
 import type { NextFunction, Request, Response } from 'express';
 import * as crmService from './crm.service';
 
+export async function createLead(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.user) { res.status(401).json({ message: 'Unauthenticated' }); return; }
+    const lead = await crmService.createLead(req.user.businessId, req.body);
+    res.status(201).json(lead);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listLeads(
   req: Request,
   res: Response,

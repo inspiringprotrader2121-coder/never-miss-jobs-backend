@@ -10,6 +10,14 @@ const listLeadsSchema = z.object({
   search: z.string().optional()
 });
 
+const createLeadSchema = z.object({
+  fullName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().min(3).optional(),
+  notes: z.string().optional(),
+  source: z.string().optional()
+});
+
 const updateLeadSchema = z.object({
   fullName: z.string().min(1).optional(),
   email: z.string().email().optional(),
@@ -18,6 +26,21 @@ const updateLeadSchema = z.object({
   notes: z.string().optional(),
   source: z.string().optional()
 });
+
+export async function createLead(businessId: string, rawInput: unknown) {
+  const input = createLeadSchema.parse(rawInput);
+  return prisma.lead.create({
+    data: {
+      businessId,
+      fullName: input.fullName ?? null,
+      email: input.email ?? null,
+      phone: input.phone ?? null,
+      notes: input.notes ?? null,
+      source: input.source ?? 'manual',
+      status: LeadStatus.NEW
+    }
+  });
+}
 
 export async function listLeads(businessId: string, rawQuery: unknown) {
   const query = listLeadsSchema.parse(rawQuery);

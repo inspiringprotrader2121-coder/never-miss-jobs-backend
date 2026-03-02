@@ -9,6 +9,7 @@ const createAppointmentSchema = z.object({
   leadId: z.string().cuid().optional(),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
+  notes: z.string().max(1000).optional(),
   sendSmsConfirmation: z.boolean().default(true)
 });
 
@@ -119,6 +120,7 @@ export async function createAppointment(
       leadId: lead?.id ?? null,
       startsAt,
       endsAt,
+      notes: input.notes ?? null,
       status: AppointmentStatus.CONFIRMED
     },
     include: {
