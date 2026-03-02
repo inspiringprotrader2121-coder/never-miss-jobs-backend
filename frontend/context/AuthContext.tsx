@@ -22,6 +22,15 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function resolvePostLoginRoute(): Promise<string> {
+  try {
+    const { data } = await api.get<{ onboardingComplete: boolean }>('/setup/status');
+    return data.onboardingComplete ? '/dashboard' : '/setup';
+  } catch {
+    return '/setup';
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,14 +45,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await api.post<{ token: string }>('/auth/login', { email, password });
     saveToken(data.token);
     setUser(getUser());
-    router.push('/dashboard');
+    const route = await resolvePostLoginRoute();
+    router.push(route);
   }
 
   async function register(data: RegisterData) {
     const res = await api.post<{ token: string }>('/auth/register', data);
     saveToken(res.data.token);
     setUser(getUser());
-    router.push('/dashboard');
+    // New registrations always go to setup
+    router.push('/setup');
   }
 
   function logout() {

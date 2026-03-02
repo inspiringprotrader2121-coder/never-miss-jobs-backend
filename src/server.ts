@@ -15,6 +15,7 @@ import { smsRouter } from './modules/sms/sms.routes';
 import { crmRouter } from './modules/crm/crm.routes';
 import { businessRouter } from './modules/business/business.routes';
 import { voiceRouter } from './modules/voice/voice.routes';
+import { setupRouter } from './modules/setup/setup.routes';
 import { startAppointmentReminderJob } from './jobs/appointmentReminders';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -63,6 +64,7 @@ app.use('/crm/leads', crmRouter);
 app.use('/business', businessRouter);
 app.use('/voice', voiceRouter);
 app.use('/sms', smsRouter);
+app.use('/setup', setupRouter);
 
 app.use(errorHandler);
 

@@ -2,24 +2,45 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Menu } from 'lucide-react';
+
+interface SetupStatus {
+  onboardingComplete: boolean;
+  onboardingStep: number;
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const { data: setupStatus, isLoading: setupLoading } = useQuery<SetupStatus>({
+    queryKey: ['setup-status'],
+    queryFn: async () => {
+      const { data } = await api.get<SetupStatus>('/setup/status');
+      return data;
+    },
+    enabled: !loading && !!user,
+    staleTime: 60_000
+  });
+
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login');
+      return;
     }
-  }, [user, loading, router]);
+    if (!loading && !setupLoading && user && setupStatus && !setupStatus.onboardingComplete) {
+      router.replace('/setup');
+    }
+  }, [user, loading, setupStatus, setupLoading, router]);
 
-  if (loading) {
+  if (loading || setupLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Skeleton className="h-12 w-48" />
@@ -28,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!user) return null;
+  if (setupStatus && !setupStatus.onboardingComplete) return null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">

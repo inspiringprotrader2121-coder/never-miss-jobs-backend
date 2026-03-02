@@ -59,6 +59,21 @@ model Business {
   phoneNumber      String?
   country          String?        @default("UK")
 
+  // Onboarding
+  onboardingComplete    Boolean        @default(false)
+  onboardingStep        Int            @default(1)
+
+  // Business profile (collected during setup)
+  staffCount            Int?
+  callsPerDay           Int?
+  averageJobValue       Int?
+  emergencyServiceEnabled Boolean?     @default(false)
+
+  // Working hours (JSON: { monday: { open, close, enabled }, ... })
+  openingHours          String?
+  closingHours          String?
+  weekendEnabled        Boolean?       @default(false)
+
   users            User[]
   subscriptions    Subscription[]
   leads            Lead[]
@@ -67,12 +82,27 @@ model Business {
   appointments     Appointment[]
   smsLogs          SmsLog[]
   aiSettings       AiSettings?
+  services         Service[]
 
   stripeCustomerId      String?
   googleRefreshToken    String?
   googleCalendarId      String?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  name            String
+  durationMinutes Int      @default(60)
+  depositRequired Boolean  @default(false)
+  depositAmount   Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([businessId])
 }
 
 model User {
